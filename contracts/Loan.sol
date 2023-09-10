@@ -3,9 +3,7 @@ pragma solidity ^0.8.18;
 
 import { ILocker } from "./interfaces/ILocker.sol";
 
-contract Loan {
-
-    struct LoanInfo {
+struct LoanInfo {
         address admin;
         address borrower;
         ILocker locker;
@@ -18,7 +16,8 @@ contract Loan {
         uint256 collateralRatio;
 
     }
-    
+
+contract Loan {
     LoanInfo public info;
 
     constructor(LoanInfo memory _info){

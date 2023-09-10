@@ -10,6 +10,7 @@ contract Locker {
     IERC20Detail public immutable asset;
     uint256 public totalDeposits;
     uint256 public lendAmount;
+    uint256 public collateralAmount;
     mapping(address userAddress => uint256 depositAmount) public deposits;
 
     constructor(address _asset) {
@@ -28,6 +29,17 @@ contract Locker {
 
         totalDeposits += amount;
         deposits[_from] += amount;
+    }
+
+    function depositCollateral(address _from, uint256 amount) public payable {
+        if(address(asset) != address(0)){
+            require(msg.value == 0, "native token not supported");
+            asset.safeTransferFrom(_from, address(this), amount);
+        }else{
+            require(msg.value == amount, "invalid amount recieved");
+        }
+
+        collateralAmount += amount;
     }
 
     function withdraw(address _to, uint256 amount) public {
