@@ -133,7 +133,7 @@ describe("Locker", function () {
         await locker.lendAmount().then((amount: BigInt) => {
             expect(amount).to.equal(ethers.parseEther("2"))
         });
-        await locker.connect(owner).returnAsset(owner, {value: ethers.parseEther("2")});
+        await locker.connect(owner).returnAsset(owner, ethers.parseEther("2"), {value: ethers.parseEther("2")});
         await locker.totalDeposits().then((amount: BigInt) => {
             expect(amount).to.equal(ethers.parseEther("2"))
         });
@@ -156,7 +156,7 @@ describe("Locker", function () {
         });
 
         await mockToken.connect(owner).approve(tokenLocker, ethers.parseEther("2"));
-        await tokenLocker.connect(owner).returnAsset(owner);
+        await tokenLocker.connect(owner).returnAsset(owner, ethers.parseEther("2"));
         await tokenLocker.totalDeposits().then((amount: BigInt) => {
             expect(amount).to.equal(ethers.parseEther("2"))
         });

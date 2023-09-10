@@ -55,16 +55,16 @@ contract Locker {
         }
     }
 
-    function returnAsset(address _from) public payable {
+    function returnAsset(address _from, uint256 amount) public payable {
         require(lendAmount > 0, "not borrowed yet");
         if(address(asset) != address(0)){
             require(msg.value == 0, "native token not supported");
-            asset.safeTransferFrom(_from, address(this), lendAmount);
+            asset.safeTransferFrom(_from, address(this), amount);
         }else{
-            require(msg.value == lendAmount, "invalid amount recieved");
+            require(msg.value == amount, "invalid amount recieved");
         }
         
-        totalDeposits += lendAmount;
+        totalDeposits += amount;
         lendAmount = 0;
     }
 }
