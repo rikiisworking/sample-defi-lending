@@ -18,6 +18,7 @@ describe("Locker", function () {
         [owner, user1, user2] = await ethers.getSigners();
         const tokenFactory = await ethers.getContractFactory("MockToken");
         mockToken = await tokenFactory.deploy("Mock Token", "MT", decimals);
+        await mockToken.waitForDeployment();
 
         const mintAmount = ethers.parseUnits("100000", decimals);
         await mockToken.mint(owner.address, mintAmount);
@@ -29,6 +30,8 @@ describe("Locker", function () {
         const lockerFactory = await ethers.getContractFactory("Locker");
         locker = await lockerFactory.deploy(ethers.ZeroAddress);
         tokenLocker = await lockerFactory.deploy(mockToken)
+        await locker.waitForDeployment();
+        await tokenLocker.waitForDeployment();
 
     })
 

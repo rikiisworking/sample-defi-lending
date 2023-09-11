@@ -33,6 +33,7 @@ describe("Loan", function () {
     [owner, borrower, user] = await ethers.getSigners();
     const tokenFactory = await ethers.getContractFactory("MockToken");
     mockToken = await tokenFactory.deploy("Mock Token", "MT", decimals);
+    await mockToken.waitForDeployment();
 
     const mintAmount = ethers.parseUnits("100000", decimals);
     await mockToken.mint(owner.address, mintAmount);
@@ -43,8 +44,10 @@ describe("Loan", function () {
   this.beforeEach(async () => {
     const adminFactory = await ethers.getContractFactory("Admin");
     admin = await adminFactory.deploy();
+    await admin.waitForDeployment();
     const lockerFactory = await ethers.getContractFactory("Locker");
     locker = await lockerFactory.deploy(mockToken);
+    await locker.waitForDeployment();
 
     const currentTimestamp = await time.latest();
 
@@ -61,7 +64,8 @@ describe("Loan", function () {
       collateralRatio: 3000,
     };
     const loanFactory = await ethers.getContractFactory("Loan");
-    loan = await loanFactory.deploy(initValue);
+    loan = await loanFactory.deploy(initValue)
+    await loan.waitForDeployment();
   });
 
   it("depositFunds() should deposit funds into locker", async () => {
@@ -224,5 +228,5 @@ describe("Loan", function () {
     await expect(loan.connect(borrower).returnLoan()).to.be.revertedWith("currently unavailable");
   })
 
-  
+
 });

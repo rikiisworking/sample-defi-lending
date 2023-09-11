@@ -16,6 +16,7 @@ describe("Admin", function () {
     beforeEach(async () => {
         const adminFactory = await ethers.getContractFactory("Admin");
         admin = await adminFactory.deploy();
+        await admin.waitForDeployment();
 
     })
 
