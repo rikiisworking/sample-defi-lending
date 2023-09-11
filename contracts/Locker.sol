@@ -11,6 +11,7 @@ contract Locker {
     uint256 public totalDeposits;
     uint256 public lendAmount;
     uint256 public collateralAmount;
+    uint256 public totalInterest;
     mapping(address userAddress => uint256 depositAmount) public deposits;
 
     constructor(address _asset) {
@@ -54,6 +55,21 @@ contract Locker {
         }
     }
 
+    function claim(address _to) public {
+        uint256 userDeposit = deposits[_to];
+        uint256 interest = totalInterest * userDeposit / lendAmount;
+        uint256 claimAmount = interest + userDeposit;
+        deposits[_to] = 0;
+        totalDeposits -= userDeposit;
+
+        if (address(asset) != address(0)) {
+            asset.safeTransfer(_to, claimAmount);
+        } else {
+            (bool sent, ) = _to.call{ value: claimAmount }("");
+            require(sent, "failed to send native token");
+        }
+    }
+
     function lendAsset(address _to) public {
         require(lendAmount == 0, "already borrowed");
         lendAmount = totalDeposits;
@@ -67,8 +83,9 @@ contract Locker {
         }
     }
 
-    function returnAsset(address _from, uint256 amount) public payable {
+    function returnAsset(address _from, uint256 principal, uint256 interest) public payable {
         require(lendAmount > 0, "not borrowed yet");
+        uint256 amount = principal + interest;
         if(address(asset) != address(0)){
             require(msg.value == 0, "native token not supported");
             asset.safeTransferFrom(_from, address(this), amount);
@@ -76,7 +93,8 @@ contract Locker {
             require(msg.value == amount, "invalid amount recieved");
         }
         
-        totalDeposits += amount;
+        totalDeposits += principal;
+        totalInterest += interest;
         lendAmount = 0;
     }
 }

@@ -179,9 +179,14 @@ describe("Loan", function () {
   })
   
   it("returnLoan() should work properly", async () => {
-    const interestRate = 2000n * 30n / 365n;
-    const interest = ethers.parseEther("100") * interestRate / 10000n;
-    const returnAmount = ethers.parseEther("100") + interest;
+    const borrowerInterestRate = 2000n * 30n / 365n;
+    const borrowerInterest = ethers.parseEther("100") * borrowerInterestRate / 10000n;
+
+    const lenderInterestRate = 1000n * 30n / 365n;
+    const lenderInterest = ethers.parseEther("100") * lenderInterestRate / 10000n;
+
+    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
+    const adminApproveAmount = borrowerInterest - lenderInterest;
 
     await time.increase(duration.days(3));
     await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
@@ -195,12 +200,24 @@ describe("Loan", function () {
     await time.increase(duration.days(30));
     
 
-    await mockToken.connect(borrower).approve(locker, returnAmount);
+    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
 
+    const adminFeeBefore = await admin.collectedFees(mockToken);
     const balanceBefore = await locker.totalDeposits();
+    const lenderInterestBefore = await locker.totalInterest();
+    
     await loan.connect(borrower).returnLoan();
+
+    const adminFeeAfter = await admin.collectedFees(mockToken);
     const balanceAfter = await locker.totalDeposits();
-    expect(balanceAfter - balanceBefore).to.be.equal(returnAmount);
+    const lenderInterestAfter = await locker.totalInterest();
+
+    
+    expect(adminFeeAfter - adminFeeBefore).to.equal(borrowerInterest - lenderInterest);
+    expect(balanceAfter  - balanceBefore ).to.equal(ethers.parseEther("100"));
+    expect(lenderInterestAfter - lenderInterestBefore).to.equal(lenderInterest);
+
   })
   
   it("returnLoan() should be called by borrower", async () => {
@@ -228,5 +245,19 @@ describe("Loan", function () {
     await expect(loan.connect(borrower).returnLoan()).to.be.revertedWith("currently unavailable");
   })
 
+  // it("claim() should work properly", async () => {
 
+  // })
+
+  // it("claim() should be called by lender", async () => {
+
+  // })
+
+  // it("claim() should be called after return due date", async () => {
+
+  // })
+
+  // it("claim() can't be called before loan returned", async () => {
+
+  // })
 });
