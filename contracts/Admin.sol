@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.18;
 
-import { ILocker } from "./interfaces/ILocker.sol";
 import { ILockerFactory } from "./interfaces/ILockerFactory.sol";
 import { ILoanFactory, LoanInfo } from "./interfaces/ILoanFactory.sol";
 
@@ -47,7 +46,7 @@ contract Admin {
         LoanInfo memory loanInfo = LoanInfo(
             address(this),
             msg.sender,
-            ILocker(lockerAddress),
+            lockerAddress,
             conditions[0],
             conditions[1],
             conditions[2],
