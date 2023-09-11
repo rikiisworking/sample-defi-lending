@@ -6,7 +6,7 @@ import { ILocker } from "./interfaces/ILocker.sol";
 struct LoanInfo {
         address admin;
         address borrower;
-        ILocker locker;
+        address locker;
         uint256 loanLimit;
         uint256 depositStartDate;
         uint256 loanDurationInDays;
@@ -17,6 +17,7 @@ struct LoanInfo {
 
     }
 
+
 contract Loan {
     LoanInfo public info;
 
@@ -26,38 +27,40 @@ contract Loan {
     }
 
     function depositFunds(uint256 amount) external payable {
-        require(info.locker.totalDeposits() + amount <= info.loanLimit);
-        require(block.timestamp >= info.depositStartDate && block.timestamp < info.collateralDepositStartDate);
+        require(ILocker(info.locker).totalDeposits() + amount <= info.loanLimit, "can't deposit more than loan limit");
+        require(block.timestamp >= info.depositStartDate && block.timestamp < info.collateralDepositStartDate, "currently unavailable");
 
-        info.locker.deposit{ value: msg.value }(msg.sender, amount);
+        ILocker(info.locker).deposit{ value: msg.value }(msg.sender, amount);
     }
 
     function depositCollateral() external payable {
-        require(msg.sender == info.borrower);
-        require(block.timestamp >= info.collateralDepositStartDate && block.timestamp < info.collateralDepositStartDate + 48 hours);
-        uint256 requiredCollateral = (info.locker.totalDeposits() * info.collateralRatio) / 10000;
-        info.locker.depositCollateral{value: msg.value}(msg.sender, requiredCollateral);
+        require(msg.sender == info.borrower, "only borrower can deposit collateral");
+        require(block.timestamp >= info.collateralDepositStartDate && block.timestamp < info.collateralDepositStartDate + 48 hours, "currently unavailable");
+        
+        uint256 requiredCollateral = (ILocker(info.locker).totalDeposits() * info.collateralRatio) / 10000;
+        ILocker(info.locker).depositCollateral{value: msg.value}(msg.sender, requiredCollateral);
     }
 
     function takeLoan() external {
-        require(block.timestamp >= info.collateralDepositStartDate + 48 hours);
-        require(msg.sender == info.borrower);
-        info.locker.lendAsset(info.borrower);
+        require(msg.sender == info.borrower, "only borrower can take loan");
+        require(block.timestamp >= info.collateralDepositStartDate && block.timestamp < info.collateralDepositStartDate + info.loanDurationInDays * 86400, "currently unavailable"); 
+        uint256 requiredCollateral = (ILocker(info.locker).totalDeposits() * info.collateralRatio) / 10000;
+        require(ILocker(info.locker).collateralAmount() == requiredCollateral, "collateral required to take loan");
+        ILocker(info.locker).lendAsset(info.borrower);
     }
 
     function returnLoan() external {
+        require(msg.sender == info.borrower, "only borrower can return loan");
         require(block.timestamp >= info.collateralDepositStartDate + (info.loanDurationInDays) * 86400 && 
-            block.timestamp < info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400);
-        require(msg.sender == info.borrower);
-        uint256 lendAmount = info.locker.lendAmount();
+            block.timestamp < info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400,"currently unavailable");
+        uint256 lendAmount = ILocker(info.locker).lendAmount();
         uint256 borrowerInterest = calculateInterest( lendAmount, info.borrowerAPY, info.loanDurationInDays);
-        info.locker.returnAsset(info.borrower, borrowerInterest + lendAmount);
+        ILocker(info.locker).returnAsset(info.borrower, borrowerInterest + lendAmount);
     }
-
 
     function validateInitialLoanInfo(LoanInfo memory _info) internal view {
         require(_info.borrower != address(0), "invalid borrower address");
-        require(address(_info.locker) != address(0), "invalid locker address");
+        require(_info.locker != address(0), "invalid locker address");
         require(_info.loanLimit > 0, "invalid loanLimit");
         require(_info.depositStartDate > block.timestamp);
         require(_info.loanDurationInDays > 0);
