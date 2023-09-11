@@ -3,13 +3,17 @@ pragma solidity ^0.8.18;
 
 import { ILockerFactory } from "./interfaces/ILockerFactory.sol";
 import { ILoanFactory, LoanInfo } from "./interfaces/ILoanFactory.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract Admin {
+    using SafeERC20 for IERC20;
+
     address public owner;
     ILockerFactory public lockerFactory;
     ILoanFactory public loanFactory;
     mapping(address borrower => bool isWhitelisted) public borrowers;
-
+    mapping(address asset => uint256 amount) public collectedFees;
 
     modifier onlyOwner() {
         require(msg.sender == owner, "unauthorized");
@@ -19,6 +23,8 @@ contract Admin {
     constructor() {
         owner = msg.sender;
     }
+
+    receive() external payable {}
 
     function setFactories(
         address _lockerFactory,
@@ -55,6 +61,16 @@ contract Admin {
             conditions[5],
             conditions[6]
         );
-        address loanAddress = loanFactory.createLoan(loanInfo);
+        loanFactory.createLoan(loanInfo);
+    }
+
+    function collectFee(address _from, address asset, uint256 amount) external payable{
+        if(address(asset) != address(0)){
+            require(msg.value == 0, "native token not supported");
+            IERC20(asset).safeTransferFrom(_from, address(this), amount);
+        }else {
+            require(msg.value == amount, "invalid amount recieved");
+        }
+        collectedFees[asset] += amount;
     }
 }
