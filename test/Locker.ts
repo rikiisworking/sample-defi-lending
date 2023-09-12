@@ -65,6 +65,27 @@ describe("Locker", function () {
         });
     })
 
+    it("depositCollateral() should work for native token", async () => {
+        await locker.collateralAmount().then((amount: BigInt) => {
+            expect(amount).to.equal(BigInt(0));
+        })
+        await locker.connect(owner).depositCollateral(owner, ethers.parseEther("1"), {value: ethers.parseEther("1")});
+        await locker.collateralAmount().then((amount: BigInt) => {
+            expect(amount).to.equal(ethers.parseEther("1"));
+        })
+    })
+    
+    it("depositCollateral() should work for erc20 token", async () => {
+        await tokenLocker.collateralAmount().then((amount:BigInt) => {
+            expect(amount).to.equal(BigInt(0));
+        })
+        await mockToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
+        await tokenLocker.connect(owner).depositCollateral(owner, ethers.parseEther("1"));
+        await tokenLocker.collateralAmount().then((amount: BigInt) => {
+            expect(amount).to.equal(ethers.parseEther("1"));
+        })
+    })
+
     it("withdraw() should work for native token", async () => {
         await locker.connect(user1).deposit(user1.address, ethers.parseEther("1"), {value: ethers.parseEther("1")})
         await locker.deposits(user1.address).then((amount: BigInt) => {
@@ -88,6 +109,23 @@ describe("Locker", function () {
         await tokenLocker.deposits(user1.address).then((amount: BigInt) => {
             expect(amount).to.equal(BigInt(0))
         });
+    })
+
+    it("claim() should return deposit and interest back to lender", async () => {
+        await mockToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+        await tokenLocker.connect(user1).deposit(user1.address, ethers.parseEther("1"));
+        await mockToken.connect(user2).approve(tokenLocker, ethers.parseEther("1"));
+        await tokenLocker.connect(user2).deposit(user2.address, ethers.parseEther("1"));
+        await tokenLocker.connect(owner).lendAsset(owner);
+
+        await mockToken.connect(owner).approve(tokenLocker, ethers.parseEther("3"));
+        await tokenLocker.connect(owner).returnAsset(owner, ethers.parseEther("2"), ethers.parseEther("1"));
+
+        const beforeBalance = await mockToken.balanceOf(user1);
+        await tokenLocker.connect(user1).claim(user1);
+        const afterBalance = await mockToken.balanceOf(user1);
+
+        expect(afterBalance - beforeBalance).to.equal(ethers.parseEther("1.5"));
     })
 
     it("lendAsset() should work for native token", async () => {
@@ -136,12 +174,9 @@ describe("Locker", function () {
         await locker.lendAmount().then((amount: BigInt) => {
             expect(amount).to.equal(ethers.parseEther("2"))
         });
-        await locker.connect(owner).returnAsset(owner, ethers.parseEther("2"), {value: ethers.parseEther("2")});
+        await locker.connect(owner).returnAsset(owner, ethers.parseEther("2"), ethers.parseEther("1"), {value: ethers.parseEther("3")});
         await locker.totalDeposits().then((amount: BigInt) => {
             expect(amount).to.equal(ethers.parseEther("2"))
-        });
-        await locker.lendAmount().then((amount: BigInt) => {
-            expect(amount).to.equal(BigInt(0))
         });
     })
 
@@ -158,13 +193,12 @@ describe("Locker", function () {
             expect(amount).to.equal(ethers.parseEther("2"))
         });
 
-        await mockToken.connect(owner).approve(tokenLocker, ethers.parseEther("2"));
-        await tokenLocker.connect(owner).returnAsset(owner, ethers.parseEther("2"));
+        await mockToken.connect(owner).approve(tokenLocker, ethers.parseEther("3"));
+        await tokenLocker.connect(owner).returnAsset(owner, ethers.parseEther("2"), ethers.parseEther("1"));
         await tokenLocker.totalDeposits().then((amount: BigInt) => {
             expect(amount).to.equal(ethers.parseEther("2"))
         });
-        await tokenLocker.lendAmount().then((amount: BigInt) => {
-            expect(amount).to.equal(BigInt(0))
-        });
     })
+
+    
 })

@@ -47,6 +47,14 @@ contract Admin {
         owner = _address;
     }
 
+    /**
+    @dev creates unapproved loan with borrower's offered conditions
+    @param conditions  -[0] loanLimit
+                        -[1] depositStartDate
+                        -[2] loanDurationInDays
+                        -[3] borrowerAPY
+    @param _asset token address used for loan
+    */
     function createProposal(uint256[4] memory conditions, address _asset) external {
         address lockerAddress = lockerFactory.createLocker(_asset);
         LoanInfo memory loanInfo = LoanInfo(
@@ -63,8 +71,6 @@ contract Admin {
         );
         loanFactory.createLoan(loanInfo);
     }
-
-    
 
     function collectFee(address _from, address asset, uint256 amount) external payable{
         if(address(asset) != address(0)){

@@ -1,16 +1,26 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Admin } from "../typechain-types";
+import { Admin, LoanFactory, LockerFactory, MockToken } from "../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
+import { time } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("Admin", function () {
     let admin: Admin;
+    let mockToken: MockToken;
+    let loanFactory: LoanFactory;
+    let lockerFactory: LockerFactory;
     let owner: HardhatEthersSigner;
     let user1: HardhatEthersSigner;
     let user2: HardhatEthersSigner;
+    const decimals = 18;
 
     before(async () => {
         [owner, user1, user2] = await ethers.getSigners();
+        const tokenFactory = await ethers.getContractFactory("MockToken");
+        mockToken = await tokenFactory.deploy("Mock Token", "MT", decimals);
+        await mockToken.waitForDeployment();
+        const mintAmount = ethers.parseUnits("100000", decimals);
+        await mockToken.mint(owner.address, mintAmount);
     });
 
     beforeEach(async () => {
@@ -18,6 +28,13 @@ describe("Admin", function () {
         admin = await adminFactory.deploy();
         await admin.waitForDeployment();
 
+        const _loanFactory = await ethers.getContractFactory("LoanFactory");
+        loanFactory = await _loanFactory.deploy(admin);
+        await loanFactory.waitForDeployment();
+
+        const _lockerFactory = await ethers.getContractFactory("LockerFactory");
+        lockerFactory = await _lockerFactory.deploy(admin);
+        await lockerFactory.waitForDeployment();
     })
 
     it("addBorrower() can be called only by owner", async () => {
@@ -53,6 +70,66 @@ describe("Admin", function () {
         await admin.setOwner(user1.address);
         await admin.owner().then((ownerAddress: string) => {
             expect(ownerAddress).to.equal(user1.address);
+        })
+    })
+
+    it("setFactories() should set loanFactory and lockerFactory for proposal generation", async () => {
+        await admin.lockerFactory().then((address: string) => {
+            expect(address).to.equal(ethers.ZeroAddress);
+        })
+        await admin.loanFactory().then((address:string)=> {
+            expect(address).to.equal(ethers.ZeroAddress);
+        })
+        await admin.setFactories(lockerFactory, loanFactory);
+        await admin.lockerFactory().then(async (address: string) => {
+            expect(address).to.equal(await lockerFactory.getAddress());
+        })
+        await admin.loanFactory().then(async (address:string)=> {
+            expect(address).to.equal(await loanFactory.getAddress());
+        })
+    })
+
+    it("createProposal() should generate locker and loan", async () => {
+        await lockerFactory.lockerSize().then((size: BigInt) => {
+            expect(size).to.equal(BigInt(0));
+        })
+        await loanFactory.loanSize().then((size:BigInt)=> {
+            expect(size).to.equal(BigInt(0));
+        })
+        await admin.setFactories(lockerFactory, loanFactory);
+        await admin.createProposal([
+            1000,
+            await time.latest() + 1000,
+            30,
+            1000
+        ], ethers.ZeroAddress)
+        await lockerFactory.lockerSize().then((size: BigInt) => {
+            expect(size).to.equal(BigInt(1));
+        })
+        await loanFactory.loanSize().then((size:BigInt)=> {
+            expect(size).to.equal(BigInt(1));
+        })
+    })
+
+    it("collectFee() should send token to admin contract", async () => {
+        await admin.collectedFees(mockToken).then((amount: BigInt) => {
+            expect(amount).to.equal(BigInt(0));
+        })
+        await mockToken.approve(admin, ethers.parseEther("100"));
+        await admin.collectFee(owner, mockToken, ethers.parseEther("100"));
+        await admin.collectedFees(mockToken).then((amount: BigInt) => {
+            expect(amount).to.equal(ethers.parseEther("100"));
+        })
+
+    })
+
+    it("collectFee() should send native token to admin contract", async () => {
+        await admin.collectedFees(ethers.ZeroAddress).then((amount: BigInt) => {
+            expect(amount).to.equal(BigInt(0));
+        })
+        await admin.collectFee(owner, ethers.ZeroAddress, ethers.parseEther("1"), {value: ethers.parseEther("1")});
+        await admin.collectedFees(ethers.ZeroAddress).then((amount: BigInt) => {
+            expect(amount).to.equal(ethers.parseEther("1"));
         })
     })
 })

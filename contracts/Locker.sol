@@ -85,6 +85,7 @@ contract Locker {
 
     function returnAsset(address _from, uint256 principal, uint256 interest) public payable {
         require(lendAmount > 0, "not borrowed yet");
+        
         uint256 amount = principal + interest;
         if(address(asset) != address(0)){
             require(msg.value == 0, "native token not supported");
@@ -95,6 +96,5 @@ contract Locker {
         
         totalDeposits += principal;
         totalInterest += interest;
-        lendAmount = 0;
     }
 }
