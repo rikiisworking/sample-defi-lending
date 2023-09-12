@@ -47,7 +47,7 @@ contract Admin {
         owner = _address;
     }
 
-    function createProposal(uint256[7] memory conditions, address _asset) external {
+    function createProposal(uint256[4] memory conditions, address _asset) external {
         address lockerAddress = lockerFactory.createLocker(_asset);
         LoanInfo memory loanInfo = LoanInfo(
             address(this),
@@ -57,12 +57,14 @@ contract Admin {
             conditions[1],
             conditions[2],
             conditions[3],
-            conditions[4],
-            conditions[5],
-            conditions[6]
+            0,
+            0,
+            0
         );
         loanFactory.createLoan(loanInfo);
     }
+
+    
 
     function collectFee(address _from, address asset, uint256 amount) external payable{
         if(address(asset) != address(0)){

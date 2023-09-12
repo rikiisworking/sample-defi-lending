@@ -45,12 +45,12 @@ describe("Loan", function () {
     const adminFactory = await ethers.getContractFactory("Admin");
     admin = await adminFactory.deploy();
     await admin.waitForDeployment();
+
     const lockerFactory = await ethers.getContractFactory("Locker");
     locker = await lockerFactory.deploy(mockToken);
     await locker.waitForDeployment();
 
     const currentTimestamp = await time.latest();
-
     const initValue = {
       admin,
       borrower,
@@ -58,11 +58,13 @@ describe("Loan", function () {
       loanLimit: ethers.parseEther("1000"),
       depositStartDate: currentTimestamp + duration.days(3),
       loanDurationInDays: 30,
-      collateralDepositStartDate: currentTimestamp + duration.days(10),
       borrowerAPY: 2000,
+
+      collateralDepositStartDate: currentTimestamp + duration.days(10),
       lenderInterestAPY: 1000,
       collateralRatio: 3000,
     };
+
     const loanFactory = await ethers.getContractFactory("Loan");
     loan = await loanFactory.deploy(initValue)
     await loan.waitForDeployment();
