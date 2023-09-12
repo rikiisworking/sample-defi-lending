@@ -132,4 +132,30 @@ describe("Admin", function () {
             expect(amount).to.equal(ethers.parseEther("1"));
         })
     })
+
+    
+    it("withdrawFee() should increase owner erc20 token balance", async () => {
+        await mockToken.approve(admin, ethers.parseEther("100"));
+        await admin.collectFee(owner, mockToken, ethers.parseEther("100"));
+        const balanceBefore = await mockToken.balanceOf(owner);
+        await admin.withdrawFee(mockToken);
+        const balanceAfter = await mockToken.balanceOf(owner);
+        await expect(balanceAfter-balanceBefore).to.equal(ethers.parseEther("100"));
+    })
+
+    it("withdrawFee() should increase owner native token balance", async () => {
+        await admin.collectFee(owner, ethers.ZeroAddress, ethers.parseEther("1"), {value: ethers.parseEther("1")});
+        const balanceBefore = await ethers.provider.getBalance(owner);
+        await admin.withdrawFee(ethers.ZeroAddress);
+        const balanceAfter = await ethers.provider.getBalance(owner);
+        expect(balanceBefore).to.be.lt(balanceAfter);
+    })
+
+    it("withdrawFee() can be called only by owner", async () => {
+        await expect(admin.connect(user1).withdrawFee(ethers.ZeroAddress)).to.be.revertedWith("unauthorized");
+    })
+
+    it("withdrawFee() shouldn't work if no fees are left", async () => {
+        await expect(admin.withdrawFee(ethers.ZeroAddress)).to.be.revertedWith("no fee to withdraw");
+    })
 })
