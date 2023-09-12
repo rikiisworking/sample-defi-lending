@@ -81,4 +81,17 @@ contract Admin {
         }
         collectedFees[asset] += amount;
     }
+
+    function withdrawFee(address asset) external {
+        uint256 amount = collectedFees[asset];
+        require(msg.sender == owner, "unauthorized");
+        require(amount > 0, "no fee to withdraw");
+        collectedFees[asset] = 0;
+        if(address(asset) != address(0)){
+            IERC20(asset).safeTransfer(owner, amount);
+        }else {
+            (bool sent, ) = owner.call{ value: amount }("");
+            require(sent, "failed to send native token");
+        }
+    }
 }
