@@ -11,20 +11,34 @@ struct LoanInfo {
         uint256 loanLimit;
         uint256 depositStartDate;
         uint256 loanDurationInDays;
-        uint256 collateralDepositStartDate;
         uint256 borrowerAPY;
-        uint256 lenderInterestAPY;
+        
         uint256 collateralRatio;
-
+        uint256 lenderInterestAPY;
+        uint256 collateralDepositStartDate;
     }
 
 
 contract Loan {
     LoanInfo public info;
+    bool public approved;
 
     constructor(LoanInfo memory _info){
         validateInitialLoanInfo(_info);
         info = _info;
+    }
+
+    function completeProposal(uint256[7] memory _conditions) external {
+        info.loanLimit = _conditions[0];
+        info.depositStartDate = _conditions[1];
+        info.loanDurationInDays = _conditions[2];
+        info.borrowerAPY = _conditions[3];
+        
+        info.collateralRatio = _conditions[4];
+        info.lenderInterestAPY = _conditions[5];
+        info.collateralDepositStartDate = _conditions[6];
+
+        approved = true;
     }
 
     function depositFunds(uint256 amount) external payable {
