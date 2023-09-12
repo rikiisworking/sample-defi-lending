@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Admin, Loan, Locker, MockToken } from "../typechain-types";
+import { LoanInfoStruct } from "../typechain-types/contracts/Loan";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 
@@ -27,6 +28,7 @@ describe("Loan", function () {
   let owner: HardhatEthersSigner;
   let borrower: HardhatEthersSigner;
   let user: HardhatEthersSigner;
+
   const decimals = 18;
 
   before(async () => {
@@ -55,20 +57,41 @@ describe("Loan", function () {
       admin,
       borrower,
       locker,
+
       loanLimit: ethers.parseEther("1000"),
       depositStartDate: currentTimestamp + duration.days(3),
       loanDurationInDays: 30,
       borrowerAPY: 2000,
 
-      collateralDepositStartDate: currentTimestamp + duration.days(10),
-      lenderInterestAPY: 1000,
       collateralRatio: 3000,
+      lenderInterestAPY: 1000,
+      collateralDepositStartDate: currentTimestamp + duration.days(10),
     };
 
     const loanFactory = await ethers.getContractFactory("Loan");
     loan = await loanFactory.deploy(initValue)
     await loan.waitForDeployment();
   });
+
+  it("approveProposal() should update condition and approve loan", async () => {
+    const currentTimestamp = await time.latest();
+    const updateValue = [
+      ethers.parseEther("1500"),
+      currentTimestamp + duration.days(3),
+      30,
+      2000,
+      3000,
+      1000,
+      currentTimestamp + duration.days(10)
+    ]
+    await loan.approveProposal(updateValue);
+    await loan.info().then((result: LoanInfoStruct) => {
+      expect(result.loanLimit).to.equal(ethers.parseEther("1500"));
+    })
+    await loan.approved().then((result:boolean)=> {
+      expect(result).to.be.true;
+    })
+  })
 
   it("depositFunds() should deposit funds into locker", async () => {
     await time.increase(duration.days(3));
@@ -247,19 +270,80 @@ describe("Loan", function () {
     await expect(loan.connect(borrower).returnLoan()).to.be.revertedWith("currently unavailable");
   })
 
-  // it("claim() should work properly", async () => {
+  it("claim() should work properly", async () => {
+    const borrowerInterestRate = 2000n * 30n / 365n;
+    const borrowerInterest = ethers.parseEther("100") * borrowerInterestRate / 10000n;
 
-  // })
+    const lenderInterestRate = 1000n * 30n / 365n;
+    const lenderInterest = ethers.parseEther("100") * lenderInterestRate / 10000n;
 
-  // it("claim() should be called by lender", async () => {
+    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
+    const adminApproveAmount = borrowerInterest - lenderInterest;
 
-  // })
+    await time.increase(duration.days(3));
+    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
-  // it("claim() should be called after return due date", async () => {
+    await time.increase(duration.days(7));
+    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await loan.connect(borrower).depositCollateral();
+    await loan.connect(borrower).takeLoan();
 
-  // })
+    await time.increase(duration.days(30));
+    
 
-  // it("claim() can't be called before loan returned", async () => {
+    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    
+    await loan.connect(borrower).returnLoan();
 
-  // })
+    await time.increase(duration.days(2));
+
+    const userBalanceBefore = await mockToken.connect(user).balanceOf(user);
+    await loan.connect(user).claim();
+    const userBalanceAfter = await mockToken.connect(user).balanceOf(user);
+
+    expect(userBalanceAfter - userBalanceBefore).to.equal(ethers.parseEther("100") + lenderInterest);
+  })
+
+  it("claim() should be called by lender", async () => {
+    await expect(loan.connect(borrower).claim()).to.be.revertedWith("only lender can claim");
+  })
+
+  it("claim() should be called after return due date", async () => {
+    await time.increase(duration.days(3));
+    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await loan.connect(user).depositFunds(ethers.parseEther("100"));
+    await expect(loan.connect(user).claim()).to.be.revertedWith("currently unavailable");
+  })
+
+  it("claim() can't be called before loan returned", async () => {
+    const borrowerInterestRate = 2000n * 30n / 365n;
+    const borrowerInterest = ethers.parseEther("100") * borrowerInterestRate / 10000n;
+
+    const lenderInterestRate = 1000n * 30n / 365n;
+    const lenderInterest = ethers.parseEther("100") * lenderInterestRate / 10000n;
+
+    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
+    const adminApproveAmount = borrowerInterest - lenderInterest;
+
+    await time.increase(duration.days(3));
+    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await loan.connect(user).depositFunds(ethers.parseEther("100"));
+
+    await time.increase(duration.days(7));
+    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await loan.connect(borrower).depositCollateral();
+    await loan.connect(borrower).takeLoan();
+
+    await time.increase(duration.days(30));
+    
+
+    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    
+    await time.increase(duration.days(2));
+
+    await expect(loan.connect(user).claim()).to.be.revertedWith("loan not returned yet");
+  })
 });

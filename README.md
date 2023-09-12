@@ -14,10 +14,19 @@ npx hardhat run scripts/deploy.ts
 
 # Sample Lending Service
 
+## outline
+
+3 roles for this service,
+- borrower: borrows funds and pays back with borrowerInterest
+- lender: lends funds and gets lenderInterest
+- admin: verify loan condition and approves loan, monetize from interest difference
+
 1. borrower proposes loan with conditions
 2. admin fixes condition and approves loan
 3. lenders deposits into locker for loan
 4. once funding is completed, borrower deposits collateral
 5. after depositing collateral, borrower can take loan from locker
-6. borrower returns principal with interest after loan duration
+6. borrower returns principal with interest after loan duration and withdraws collateral
 7. lenders claim their deposits and interest
+
+## details

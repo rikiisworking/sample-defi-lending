@@ -8,5 +8,5 @@ interface IAdmin {
     function addBorrower(address _address) external;
     function removeBorrower(address _address) external;
     function setOwner(address _address) external;
-    function collectFee(address _from, address asset, uint256 amount) external;
+    function collectFee(address _from, address asset, uint256 amount) payable external;
 }

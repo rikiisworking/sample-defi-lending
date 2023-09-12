@@ -8,6 +8,7 @@ struct LoanInfo {
         address admin;
         address borrower;
         address locker;
+
         uint256 loanLimit;
         uint256 depositStartDate;
         uint256 loanDurationInDays;
@@ -24,11 +25,10 @@ contract Loan {
     bool public approved;
 
     constructor(LoanInfo memory _info){
-        validateInitialLoanInfo(_info);
         info = _info;
     }
 
-    function completeProposal(uint256[7] memory _conditions) external {
+    function approveProposal(uint256[7] memory _conditions) external {
         info.loanLimit = _conditions[0];
         info.depositStartDate = _conditions[1];
         info.loanDurationInDays = _conditions[2];
@@ -64,7 +64,7 @@ contract Loan {
         ILocker(info.locker).lendAsset(info.borrower);
     }
 
-    function returnLoan() external {
+    function returnLoan() external payable {
         require(msg.sender == info.borrower, "only borrower can return loan");
         require(block.timestamp >= info.collateralDepositStartDate + (info.loanDurationInDays) * 86400 && 
             block.timestamp < info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400,"currently unavailable");
@@ -72,26 +72,20 @@ contract Loan {
         uint256 borrowerInterest = calculateInterest( lendAmount, info.borrowerAPY, info.loanDurationInDays);
         uint256 lenderInterest = calculateInterest( lendAmount, info.lenderInterestAPY, info.loanDurationInDays);
 
-        ILocker(info.locker).returnAsset(info.borrower, lendAmount, lenderInterest);
-        IAdmin(info.admin).collectFee(info.borrower, ILocker(info.locker).asset(), borrowerInterest - lenderInterest);
+        if(msg.value > 0 ){
+            ILocker(info.locker).returnAsset{value: lendAmount + lenderInterest}(info.borrower, lendAmount, lenderInterest);
+            IAdmin(info.admin).collectFee{value: borrowerInterest - lenderInterest}(info.borrower, ILocker(info.locker).asset(), borrowerInterest - lenderInterest);
+        }else {
+            ILocker(info.locker).returnAsset(info.borrower, lendAmount, lenderInterest);
+            IAdmin(info.admin).collectFee(info.borrower, ILocker(info.locker).asset(), borrowerInterest - lenderInterest);
+        }
     }
 
     function claim() external {
         require(ILocker(info.locker).deposits(msg.sender) > 0, "only lender can claim");
         require(block.timestamp > info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400, "currently unavailable");
-        require(ILocker(info.locker).totalDeposits() > 0 && ILocker(info.locker).totalInterest() > 0 && ILocker(info.locker).lendAmount() == 0, "loan not returned yet");
+        require(ILocker(info.locker).totalDeposits() == ILocker(info.locker).lendAmount() && ILocker(info.locker).totalInterest() > 0, "loan not returned yet");
         ILocker(info.locker).claim(msg.sender);
-    }
-
-    function validateInitialLoanInfo(LoanInfo memory _info) internal view {
-        require(_info.borrower != address(0), "invalid borrower address");
-        require(_info.locker != address(0), "invalid locker address");
-        require(_info.loanLimit > 0, "invalid loanLimit");
-        require(_info.depositStartDate > block.timestamp);
-        require(_info.loanDurationInDays > 0);
-        require(_info.collateralDepositStartDate > block.timestamp);
-        require(_info.borrowerAPY > 0);
-        require(_info.lenderInterestAPY > 0);
     }
 
     function calculateInterest(
