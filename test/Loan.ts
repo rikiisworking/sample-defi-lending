@@ -319,12 +319,6 @@ describe("Loan", function () {
   })
 
   it("withdrawCollateral() should work after returning loan", async () => {
-    const borrowerInterestRate = 2000n * 30n / 365n;
-    const borrowerInterest = ethers.parseEther("100") * borrowerInterestRate / 10000n;
-
-    const lenderInterestRate = 1000n * 30n / 365n;
-    const lenderInterest = ethers.parseEther("100") * lenderInterestRate / 10000n;
-
     await time.increase(duration.days(3));
     await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));

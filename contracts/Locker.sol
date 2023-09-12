@@ -11,6 +11,7 @@ contract Locker {
    
     uint256 public totalDeposits;
     uint256 public lendAmount;
+    uint256 public returnedAmount;
     uint256 public collateralAmount;
     uint256 public totalInterest;
     mapping(address userAddress => uint256 depositAmount) public deposits;
@@ -40,7 +41,7 @@ contract Locker {
         }else{
             require(msg.value == amount, "invalid amount recieved");
         }
-
+        totalDeposits += amount;
         collateralAmount += amount;
     }
 
@@ -68,17 +69,32 @@ contract Locker {
         }
     } 
 
-    function claim(address _to) public {
-        uint256 userDeposit = deposits[_to];
+    function claim(address _from) public {
+        uint256 userDeposit = deposits[_from];
         uint256 interest = totalInterest * userDeposit / lendAmount;
         uint256 claimAmount = interest + userDeposit;
-        deposits[_to] = 0;
+        
+        deposits[_from] = 0;
         totalDeposits -= userDeposit;
 
         if (address(asset) != address(0)) {
-            asset.safeTransfer(_to, claimAmount);
+            asset.safeTransfer(_from, claimAmount);
         } else {
-            (bool sent, ) = _to.call{ value: claimAmount }("");
+            (bool sent, ) = _from.call{ value: claimAmount }("");
+            require(sent, "failed to send native token");
+        }
+    }
+
+    function claimDefault(address _from) public {
+        uint256 userDeposit = deposits[_from];
+        uint256 liquidatedUserAmount = collateralAmount * userDeposit / lendAmount;
+        deposits[_from] = 0;
+        totalDeposits -= liquidatedUserAmount;
+
+        if (address(asset) != address(0)) {
+            asset.safeTransfer(_from, liquidatedUserAmount);
+        } else {
+            (bool sent, ) = _from.call{ value: liquidatedUserAmount }("");
             require(sent, "failed to send native token");
         }
     }
@@ -107,7 +123,8 @@ contract Locker {
             require(msg.value == amount, "invalid amount recieved");
         }
         
-        totalDeposits += principal;
-        totalInterest += interest;
+        totalDeposits += (principal+interest);
+        returnedAmount = principal;
+        totalInterest = interest;
     }
 }
