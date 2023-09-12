@@ -74,7 +74,7 @@ describe("Locker", function () {
             expect(amount).to.equal(ethers.parseEther("1"));
         })
     })
-    
+
     it("depositCollateral() should work for erc20 token", async () => {
         await tokenLocker.collateralAmount().then((amount:BigInt) => {
             expect(amount).to.equal(BigInt(0));
@@ -109,6 +109,41 @@ describe("Locker", function () {
         await tokenLocker.deposits(user1.address).then((amount: BigInt) => {
             expect(amount).to.equal(BigInt(0))
         });
+    })
+
+    it("withdrawCollateral() should work for native token", async() => {
+        await locker.connect(owner).depositCollateral(owner, ethers.parseEther("1"), {value: ethers.parseEther("1")});
+
+        await locker.collateralAmount().then((amount: BigInt) => {
+            expect(amount).to.equal(ethers.parseEther("1"));
+        })
+        const balanceBefore = await ethers.provider.getBalance(owner);
+
+        await locker.connect(owner).withdrawCollateral(owner);
+        await locker.collateralAmount().then((amount: BigInt) => {
+            expect(amount).to.equal(BigInt(0));
+        })
+        const balanceAfter = await ethers.provider.getBalance(owner);
+        expect(balanceBefore).to.be.lt(balanceAfter);
+  
+    })
+
+    it("withdrawCollateral() should work for erc20 token", async () => {
+        await mockToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
+        await tokenLocker.connect(owner).depositCollateral(owner, ethers.parseEther("1"));
+
+        await tokenLocker.collateralAmount().then((amount: BigInt) => {
+            expect(amount).to.equal(ethers.parseEther("1"));
+        })
+        const balanceBefore = await mockToken.balanceOf(owner);
+        
+        await tokenLocker.connect(owner).withdrawCollateral(owner);
+
+        await tokenLocker.collateralAmount().then((amount:BigInt) => {
+            expect(amount).to.equal(BigInt(0));
+        })
+        const balanceAfter = await mockToken.balanceOf(owner);
+        expect(balanceAfter - balanceBefore).to.equal(ethers.parseEther("1"));
     })
 
     it("claim() should return deposit and interest back to lender", async () => {

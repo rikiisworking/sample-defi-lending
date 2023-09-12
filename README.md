@@ -16,7 +16,7 @@ npx hardhat run scripts/deploy.ts
 
 ## outline
 
-3 roles for this service,
+there are 3 roles for this service,
 - borrower: borrows funds and pays back with borrowerInterest
 - lender: lends funds and gets lenderInterest
 - admin: verify loan condition and approves loan, monetize from interest difference
@@ -30,3 +30,15 @@ npx hardhat run scripts/deploy.ts
 7. lenders claim their deposits and interest
 
 ## details
+
+tbu
+
+## Todos
+
+- [ ] Default & Liquidate functionality
+- [ ] test codes for Default & Liquidate functionality
+- [ ] limit function call directly from locker
+- [ ] complete function call auth check
+- [ ] test codes for native tokens for Loan.ts
+- [ ] diamondcut pattern adoption
+- [ ] scenario test codes

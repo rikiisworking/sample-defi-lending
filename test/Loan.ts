@@ -270,6 +270,76 @@ describe("Loan", function () {
     await expect(loan.connect(borrower).returnLoan()).to.be.revertedWith("currently unavailable");
   })
 
+  it("withdrawCollateral() should work properly", async () => {
+    const borrowerInterestRate = 2000n * 30n / 365n;
+    const borrowerInterest = ethers.parseEther("100") * borrowerInterestRate / 10000n;
+
+    const lenderInterestRate = 1000n * 30n / 365n;
+    const lenderInterest = ethers.parseEther("100") * lenderInterestRate / 10000n;
+
+    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
+    const adminApproveAmount = borrowerInterest - lenderInterest;
+
+    await time.increase(duration.days(3));
+    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await loan.connect(user).depositFunds(ethers.parseEther("100"));
+
+    await time.increase(duration.days(7));
+    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await loan.connect(borrower).depositCollateral();
+    await loan.connect(borrower).takeLoan();
+
+    await time.increase(duration.days(30));
+    
+
+    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+
+    await loan.connect(borrower).returnLoan();
+
+    await time.increase(duration.days(2));
+
+    const borrowerBalanceBefore = await mockToken.balanceOf(borrower);
+
+    await loan.connect(borrower).withdrawCollateral();
+
+    const borrowerBalanceAfter = await mockToken.balanceOf(borrower);
+    const collateralAmountAfter = await locker.collateralAmount();
+
+    expect(borrowerBalanceAfter - borrowerBalanceBefore).to.equal(ethers.parseEther("30"));
+    expect(collateralAmountAfter).to.equal(BigInt(0));
+  })  
+
+  it("withdrawCollateral() should be called only by borrower", async () => {
+    await expect(loan.connect(user).withdrawCollateral()).to.be.revertedWith("only borrower can withdraw collateral");
+  })
+
+  it("withdrawCollateral() should work only after return due date", async () => {
+    await expect(loan.connect(borrower).withdrawCollateral()).to.be.revertedWith("currently unavailable");
+  })
+
+  it("withdrawCollateral() should work after returning loan", async () => {
+    const borrowerInterestRate = 2000n * 30n / 365n;
+    const borrowerInterest = ethers.parseEther("100") * borrowerInterestRate / 10000n;
+
+    const lenderInterestRate = 1000n * 30n / 365n;
+    const lenderInterest = ethers.parseEther("100") * lenderInterestRate / 10000n;
+
+    await time.increase(duration.days(3));
+    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await loan.connect(user).depositFunds(ethers.parseEther("100"));
+
+    await time.increase(duration.days(7));
+    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await loan.connect(borrower).depositCollateral();
+    await loan.connect(borrower).takeLoan();
+
+    await time.increase(duration.days(32));
+
+    await expect(loan.connect(borrower).withdrawCollateral()).to.be.revertedWith("loan not returned yet")
+  })
+
+
   it("claim() should work properly", async () => {
     const borrowerInterestRate = 2000n * 30n / 365n;
     const borrowerInterest = ethers.parseEther("100") * borrowerInterestRate / 10000n;

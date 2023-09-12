@@ -8,6 +8,7 @@ contract Locker {
     using SafeERC20 for IERC20Detail;
 
     IERC20Detail public immutable asset;
+   
     uint256 public totalDeposits;
     uint256 public lendAmount;
     uint256 public collateralAmount;
@@ -54,6 +55,18 @@ contract Locker {
             require(sent, "failed to send native token");
         }
     }
+
+    function withdrawCollateral(address _to) public {
+        uint256 amount = collateralAmount;
+        collateralAmount = 0;
+
+        if (address(asset) != address(0)){
+            asset.safeTransfer(_to, amount);
+        } else {
+            (bool sent, ) = _to.call{ value: amount }("");
+            require(sent, "failed to send native token");
+        }
+    } 
 
     function claim(address _to) public {
         uint256 userDeposit = deposits[_to];
