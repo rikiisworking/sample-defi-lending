@@ -12,7 +12,7 @@ npx hardhat node
 npx hardhat run scripts/deploy.ts
 ```
 
-# Sample Lending Service
+# Project description
 
 ## outline
 
