@@ -36,7 +36,7 @@ tbu
 ## Todos
 
 - [ ] Set different assets for collateral and funding
-- [ ] Default & Liquidate functionality
+- [x] Default & Liquidate functionality
 - [ ] test codes for Default & Liquidate functionality
 - [ ] limit function call directly from locker
 - [ ] complete function call auth check
