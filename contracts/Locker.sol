@@ -88,7 +88,6 @@ contract Locker {
         uint256 userDeposit = deposits[_from];
         uint256 liquidatedUserAmount = collateralAmount * userDeposit / lendAmount;
         deposits[_from] = 0;
-        totalDeposits -= liquidatedUserAmount;
 
         if (address(asset) != address(0)) {
             asset.safeTransfer(_from, liquidatedUserAmount);

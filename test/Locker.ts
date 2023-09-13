@@ -163,6 +163,22 @@ describe("Locker", function () {
         expect(afterBalance - beforeBalance).to.equal(ethers.parseEther("1.5"));
     })
 
+    it("claimDefault() should return collateral to lender", async () => {
+        await mockToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+        await tokenLocker.connect(user1).deposit(user1.address, ethers.parseEther("1"));
+        await mockToken.connect(user2).approve(tokenLocker, ethers.parseEther("1"));
+        await tokenLocker.connect(user2).deposit(user2.address, ethers.parseEther("1"));
+        await mockToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
+        await tokenLocker.connect(owner).depositCollateral(owner, ethers.parseEther("1"));
+        await tokenLocker.connect(owner).lendAsset(owner);
+
+        const balanceBefore = await mockToken.balanceOf(user1);
+        await tokenLocker.connect(user1).claimDefault(user1);
+        const balanceAfter = await mockToken.balanceOf(user1);
+
+        expect(balanceAfter - balanceBefore).to.equal(ethers.parseEther("0.5"));
+    })
+
     it("lendAsset() should work for native token", async () => {
         const beforeBalance = await ethers.provider.getBalance(owner);
         await locker.connect(user1).deposit(user1.address, ethers.parseEther("1"), {value: ethers.parseEther("1")});

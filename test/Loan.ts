@@ -410,4 +410,106 @@ describe("Loan", function () {
 
     await expect(loan.connect(user).claim()).to.be.revertedWith("loan default");
   })
+
+  it("claimDefault() should work properly", async () => {
+    const borrowerInterestRate = 2000n * 30n / 365n;
+    const borrowerInterest = ethers.parseEther("100") * borrowerInterestRate / 10000n;
+
+    const lenderInterestRate = 1000n * 30n / 365n;
+    const lenderInterest = ethers.parseEther("100") * lenderInterestRate / 10000n;
+
+    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
+    const adminApproveAmount = borrowerInterest - lenderInterest;
+
+    await time.increase(duration.days(3));
+    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await loan.connect(user).depositFunds(ethers.parseEther("100"));
+
+    await time.increase(duration.days(7));
+    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await loan.connect(borrower).depositCollateral();
+    await loan.connect(borrower).takeLoan();
+
+    await time.increase(duration.days(30));
+    
+
+    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    
+    await time.increase(duration.days(2));
+
+    const balanceBefore = await mockToken.balanceOf(user);
+    await loan.connect(user).claimDefault();
+    const balanceAfter = await mockToken.balanceOf(user);
+
+    expect(balanceAfter - balanceBefore).to.equal(ethers.parseEther("30"));
+  })
+  
+  it("claimDefault() can be called only by lender", async () => {
+    await expect(loan.connect(user).claimDefault()).to.be.revertedWith("only lender can claim");
+  })
+
+  it("claimDefault() can be called only after return due date", async () => {
+    const borrowerInterestRate = 2000n * 30n / 365n;
+    const borrowerInterest = ethers.parseEther("100") * borrowerInterestRate / 10000n;
+
+    const lenderInterestRate = 1000n * 30n / 365n;
+    const lenderInterest = ethers.parseEther("100") * lenderInterestRate / 10000n;
+
+    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
+    const adminApproveAmount = borrowerInterest - lenderInterest;
+
+    await time.increase(duration.days(3));
+    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await loan.connect(user).depositFunds(ethers.parseEther("100"));
+
+    await time.increase(duration.days(7));
+    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await loan.connect(borrower).depositCollateral();
+    await loan.connect(borrower).takeLoan();
+
+    await time.increase(duration.days(30));
+    
+
+    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    
+    await time.increase(duration.days(1));
+
+
+    await expect(loan.connect(user).claimDefault()).to.be.revertedWith("currently unavailable");
+  })
+
+  it("claimDefault() can't be called if loan has been returned", async () => {
+    const borrowerInterestRate = 2000n * 30n / 365n;
+    const borrowerInterest = ethers.parseEther("100") * borrowerInterestRate / 10000n;
+
+    const lenderInterestRate = 1000n * 30n / 365n;
+    const lenderInterest = ethers.parseEther("100") * lenderInterestRate / 10000n;
+
+    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
+    const adminApproveAmount = borrowerInterest - lenderInterest;
+
+    await time.increase(duration.days(3));
+    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await loan.connect(user).depositFunds(ethers.parseEther("100"));
+
+    await time.increase(duration.days(7));
+    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await loan.connect(borrower).depositCollateral();
+    await loan.connect(borrower).takeLoan();
+
+    await time.increase(duration.days(30));
+    
+
+    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    
+    await loan.connect(borrower).returnLoan();
+
+    await time.increase(duration.days(2));
+
+    await expect(loan.connect(user).claimDefault()).to.be.revertedWith("loan returned");
+  })
+
 });
