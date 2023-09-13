@@ -92,7 +92,7 @@ contract Loan {
     function claim() external {
         require(ILocker(info.locker).deposits(msg.sender) > 0, "only lender can claim");
         require(block.timestamp > info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400, "currently unavailable");
-        require(ILocker(info.locker).returnedAmount() == ILocker(info.locker).lendAmount(), "loan default, call claimDefault() to get liquidated collateral");
+        require(ILocker(info.locker).returnedAmount() == ILocker(info.locker).lendAmount(), "loan default");
 
         ILocker(info.locker).claim(msg.sender);
     }
@@ -100,7 +100,7 @@ contract Loan {
     function claimDefault() external {
         require(ILocker(info.locker).deposits(msg.sender) > 0, "only lender can claim");
         require(block.timestamp > info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400, "currently unavailable");
-        require(ILocker(info.locker).returnedAmount() == 0, "loan has been returned, call claim()");
+        require(ILocker(info.locker).returnedAmount() == 0, "loan returned");
 
         ILocker(info.locker).claimDefault(msg.sender);
     }

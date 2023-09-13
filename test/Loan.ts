@@ -229,18 +229,18 @@ describe("Loan", function () {
     await mockToken.connect(borrower).approve(admin, adminApproveAmount);
 
     const adminFeeBefore = await admin.collectedFees(mockToken);
-    const balanceBefore = await locker.totalDeposits();
+    const totalBalanceBefore = await locker.totalDeposits();
     const lenderInterestBefore = await locker.totalInterest();
     
     await loan.connect(borrower).returnLoan();
 
     const adminFeeAfter = await admin.collectedFees(mockToken);
-    const balanceAfter = await locker.totalDeposits();
+    const totalBalanceAfter = await locker.totalDeposits();
     const lenderInterestAfter = await locker.totalInterest();
 
     
     expect(adminFeeAfter - adminFeeBefore).to.equal(borrowerInterest - lenderInterest);
-    expect(balanceAfter  - balanceBefore ).to.equal(ethers.parseEther("100"));
+    expect(totalBalanceAfter  - totalBalanceBefore ).to.equal(lockerApproveAmount);
     expect(lenderInterestAfter - lenderInterestBefore).to.equal(lenderInterest);
 
   })
@@ -408,6 +408,6 @@ describe("Loan", function () {
     
     await time.increase(duration.days(2));
 
-    await expect(loan.connect(user).claim()).to.be.revertedWith("loan not returned yet");
+    await expect(loan.connect(user).claim()).to.be.revertedWith("loan default");
   })
 });

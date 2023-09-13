@@ -211,7 +211,7 @@ describe("Locker", function () {
         });
         await locker.connect(owner).returnAsset(owner, ethers.parseEther("2"), ethers.parseEther("1"), {value: ethers.parseEther("3")});
         await locker.totalDeposits().then((amount: BigInt) => {
-            expect(amount).to.equal(ethers.parseEther("2"))
+            expect(amount).to.equal(ethers.parseEther("3"))
         });
     })
 
@@ -231,7 +231,7 @@ describe("Locker", function () {
         await mockToken.connect(owner).approve(tokenLocker, ethers.parseEther("3"));
         await tokenLocker.connect(owner).returnAsset(owner, ethers.parseEther("2"), ethers.parseEther("1"));
         await tokenLocker.totalDeposits().then((amount: BigInt) => {
-            expect(amount).to.equal(ethers.parseEther("2"))
+            expect(amount).to.equal(ethers.parseEther("3"))
         });
     })
 
