@@ -42,7 +42,7 @@ contract Loan {
     }
 
     function depositFunds(uint256 amount) external payable {
-        require(ILocker(info.locker).totalDeposits() + amount <= info.loanLimit, "can't deposit more than loan limit");
+        require(ILocker(info.locker).totalFundAmount() + amount <= info.loanLimit, "can't deposit more than loan limit");
         require(block.timestamp >= info.depositStartDate && block.timestamp < info.collateralDepositStartDate, "currently unavailable");
 
         ILocker(info.locker).deposit{ value: msg.value }(msg.sender, amount);
@@ -52,14 +52,14 @@ contract Loan {
         require(msg.sender == info.borrower, "only borrower can deposit collateral");
         require(block.timestamp >= info.collateralDepositStartDate && block.timestamp < info.collateralDepositStartDate + 48 hours, "currently unavailable");
         
-        uint256 requiredCollateral = (ILocker(info.locker).totalDeposits() * info.collateralRatio) / 10000;
+        uint256 requiredCollateral = (ILocker(info.locker).totalFundAmount() * info.collateralRatio) / 10000;
         ILocker(info.locker).depositCollateral{value: msg.value}(msg.sender, requiredCollateral);
     }
 
     function takeLoan() external {
         require(msg.sender == info.borrower, "only borrower can take loan");
         require(block.timestamp >= info.collateralDepositStartDate && block.timestamp < info.collateralDepositStartDate + info.loanDurationInDays * 86400, "currently unavailable"); 
-        uint256 requiredCollateral = (ILocker(info.locker).totalDeposits() * info.collateralRatio) / 10000;
+        uint256 requiredCollateral = (ILocker(info.locker).totalFundAmount() * info.collateralRatio) / 10000;
         require(ILocker(info.locker).collateralAmount() == requiredCollateral, "collateral required to take loan");
         ILocker(info.locker).lendAsset(info.borrower);
     }

@@ -53,7 +53,8 @@ contract Admin {
                         -[1] depositStartDate
                         -[2] loanDurationInDays
                         -[3] borrowerAPY
-    @param _asset token address used for loan
+    @param _fundAsset token address used for loan
+    @param _collateral token address used for collateral
     */
     function createProposal(uint256[4] memory conditions, address _fundAsset, address _collateralAsset) external {
         address lockerAddress = lockerFactory.createLocker(_fundAsset, _collateralAsset);
