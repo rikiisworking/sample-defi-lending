@@ -12,8 +12,8 @@ contract LockerFactory {
         admin = _admin;
     }
 
-    function createLocker(address _asset) external returns (address) {
-        Locker locker = new Locker(_asset);
+    function createLocker(address _fundAsset, address _collateralAsset) external returns (address) {
+        Locker locker = new Locker(_fundAsset, _collateralAsset);
         lockers[lockerSize++] = address(locker);
         return address(locker);
     }

@@ -75,10 +75,10 @@ contract Loan {
 
         if(msg.value > 0 ){
             ILocker(info.locker).returnAsset{value: lendAmount + lenderInterest}(info.borrower, lendAmount, lenderInterest);
-            IAdmin(info.admin).collectFee{value: borrowerInterest - lenderInterest}(info.borrower, ILocker(info.locker).asset(), borrowerInterest - lenderInterest);
+            IAdmin(info.admin).collectFee{value: borrowerInterest - lenderInterest}(info.borrower, ILocker(info.locker).fundAsset(), borrowerInterest - lenderInterest);
         }else {
             ILocker(info.locker).returnAsset(info.borrower, lendAmount, lenderInterest);
-            IAdmin(info.admin).collectFee(info.borrower, ILocker(info.locker).asset(), borrowerInterest - lenderInterest);
+            IAdmin(info.admin).collectFee(info.borrower, ILocker(info.locker).fundAsset(), borrowerInterest - lenderInterest);
         }
     }
 

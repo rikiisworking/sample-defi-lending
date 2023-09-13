@@ -2,8 +2,9 @@
 pragma solidity ^0.8.18;
 
 interface ILocker {
-    function asset() external view returns (address);
-    function totalDeposits() external view returns (uint256);
+    function fundAsset() external view returns (address);
+    function collateralAsset() external view returns (address);
+    function totalFundAmount() external view returns (uint256);
     function returnedAmount() external view returns (uint256);
     function collateralAmount() external view returns (uint256);
     function lendAmount() external view returns (uint256);
