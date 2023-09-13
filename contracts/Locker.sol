@@ -41,7 +41,6 @@ contract Locker {
         }else{
             require(msg.value == amount, "invalid amount recieved");
         }
-        totalDeposits += amount;
         collateralAmount += amount;
     }
 
