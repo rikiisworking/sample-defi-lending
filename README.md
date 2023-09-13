@@ -37,7 +37,7 @@ tbu
 
 - [ ] Set different assets for collateral and funding
 - [x] Default & Liquidate functionality
-- [ ] test codes for Default & Liquidate functionality
+- [x] test codes for Default & Liquidate functionality
 - [ ] limit function call directly from locker
 - [ ] complete function call auth check
 - [ ] test codes for native tokens for Loan.ts
