@@ -35,7 +35,7 @@ tbu
 
 ## Todos
 
-- [ ] Set different assets for collateral and funding
+- [x] Set different assets for collateral and funding
 - [x] Default & Liquidate functionality
 - [x] test codes for Default & Liquidate functionality
 - [ ] Separate basic transfer functionality working for both erc20 and native token
