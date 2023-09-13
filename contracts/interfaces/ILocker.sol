@@ -10,7 +10,7 @@ interface ILocker {
     function lendAmount() external view returns (uint256);
     function totalInterest() external view returns (uint256);
     function deposits(address user) external view returns (uint256);
-    function deposit(address _from, uint256 amount) external payable;
+    function depositFunds(address _from, uint256 amount) external payable;
     function depositCollateral(address _from, uint256 amount) external payable;
     function withdraw(address _to, uint256 amount) external;
     function withdrawCollateral(address _to) external;

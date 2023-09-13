@@ -45,7 +45,7 @@ contract Loan {
         require(ILocker(info.locker).totalFundAmount() + amount <= info.loanLimit, "can't deposit more than loan limit");
         require(block.timestamp >= info.depositStartDate && block.timestamp < info.collateralDepositStartDate, "currently unavailable");
 
-        ILocker(info.locker).deposit{ value: msg.value }(msg.sender, amount);
+        ILocker(info.locker).depositFunds{ value: msg.value }(msg.sender, amount);
     }
 
     function depositCollateral() external payable {

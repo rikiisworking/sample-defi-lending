@@ -24,7 +24,7 @@ contract Locker {
 
     receive() external payable {}
 
-    function depsitFunds(address _from, uint256 amount) public payable {
+    function depositFunds(address _from, uint256 amount) public payable {
         if(address(fundAsset) != address(0)){
             require(msg.value == 0, "native token not supported");
             fundAsset.safeTransferFrom(_from, address(this), amount);
