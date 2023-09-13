@@ -103,7 +103,7 @@ describe("Admin", function () {
             await time.latest() + 1000,
             30,
             1000
-        ], ethers.ZeroAddress)
+        ], ethers.ZeroAddress, ethers.ZeroAddress)
         await lockerFactory.lockerSize().then((size: BigInt) => {
             expect(size).to.equal(BigInt(1));
         })

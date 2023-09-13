@@ -17,6 +17,8 @@ struct LoanInfo {
         uint256 collateralRatio;
         uint256 lenderInterestAPY;
         uint256 collateralDepositStartDate;
+
+        uint256 collateralAssetPriceRatio;
     }
 
 
@@ -28,7 +30,7 @@ contract Loan {
         info = _info;
     }
 
-    function approveProposal(uint256[7] memory _conditions) external {
+    function approveProposal(uint256[8] memory _conditions) external {
         info.loanLimit = _conditions[0];
         info.depositStartDate = _conditions[1];
         info.loanDurationInDays = _conditions[2];
@@ -38,7 +40,13 @@ contract Loan {
         info.lenderInterestAPY = _conditions[5];
         info.collateralDepositStartDate = _conditions[6];
 
+        info.collateralAssetPriceRatio = _conditions[7];
+
         approved = true;
+    }
+
+    function updateCollateralAssetPriceRatio(uint256 _ratio) external {
+        info.collateralAssetPriceRatio = _ratio;
     }
 
     function depositFunds(uint256 amount) external payable {
@@ -52,7 +60,7 @@ contract Loan {
         require(msg.sender == info.borrower, "only borrower can deposit collateral");
         require(block.timestamp >= info.collateralDepositStartDate && block.timestamp < info.collateralDepositStartDate + 48 hours, "currently unavailable");
         
-        uint256 requiredCollateral = (ILocker(info.locker).totalFundAmount() * info.collateralRatio) / 10000;
+        uint256 requiredCollateral = (ILocker(info.locker).totalFundAmount() * info.collateralRatio * info.collateralAssetPriceRatio) / 100000000;
         ILocker(info.locker).depositCollateral{value: msg.value}(msg.sender, requiredCollateral);
     }
 

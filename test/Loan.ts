@@ -70,6 +70,8 @@ describe("Loan", function () {
       collateralRatio: 3000,
       lenderInterestAPY: 1000,
       collateralDepositStartDate: currentTimestamp + duration.days(10),
+
+      collateralAssetPriceRatio: 10000
     };
 
     const loanFactory = await ethers.getContractFactory("Loan");
@@ -86,7 +88,8 @@ describe("Loan", function () {
       2000,
       3000,
       1000,
-      currentTimestamp + duration.days(10)
+      currentTimestamp + duration.days(10),
+      10000
     ]
     await loan.approveProposal(updateValue);
     await loan.info().then((result: LoanInfoStruct) => {

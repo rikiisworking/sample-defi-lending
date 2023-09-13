@@ -68,7 +68,8 @@ contract Admin {
             conditions[3],
             0,
             0,
-            0
+            0,
+            10000
         );
         loanFactory.createLoan(loanInfo);
     }
