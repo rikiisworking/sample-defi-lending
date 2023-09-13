@@ -53,7 +53,7 @@ describe("Loan", function () {
     await admin.waitForDeployment();
 
     const lockerFactory = await ethers.getContractFactory("Locker");
-    locker = await lockerFactory.deploy(fundToken);
+    locker = await lockerFactory.deploy(fundToken, collateralToken);
     await locker.waitForDeployment();
 
     const currentTimestamp = await time.latest();
@@ -140,7 +140,7 @@ describe("Loan", function () {
     await locker.collateralAmount().then((amount: BigInt) => {
         expect(amount).to.equal(BigInt(0));
     })
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await locker.collateralAmount().then((amount: BigInt) => {
         expect(amount).to.equal(ethers.parseEther("30"));
@@ -156,7 +156,7 @@ describe("Loan", function () {
     await time.increase(duration.days(3));
     await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await expect(loan.connect(borrower).depositCollateral()).to.be.revertedWith("currently unavailable");
     await time.increase(duration.days(10));
     await expect(loan.connect(borrower).depositCollateral()).to.be.revertedWith("currently unavailable");
@@ -168,7 +168,7 @@ describe("Loan", function () {
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
 
     const balanceBefore = await fundToken.balanceOf(borrower);
@@ -191,7 +191,7 @@ describe("Loan", function () {
     await expect(loan.connect(borrower).takeLoan()).to.be.revertedWith("currently unavailable");
 
     await time.increase(duration.days(4));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     
     await time.increase(duration.days(60));
@@ -222,7 +222,7 @@ describe("Loan", function () {
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
@@ -233,13 +233,13 @@ describe("Loan", function () {
     await fundToken.connect(borrower).approve(admin, adminApproveAmount);
 
     const adminFeeBefore = await admin.collectedFees(fundToken);
-    const totalBalanceBefore = await locker.totalDeposits();
+    const totalBalanceBefore = await locker.totalFundAmount();
     const lenderInterestBefore = await locker.totalInterest();
     
     await loan.connect(borrower).returnLoan();
 
     const adminFeeAfter = await admin.collectedFees(fundToken);
-    const totalBalanceAfter = await locker.totalDeposits();
+    const totalBalanceAfter = await locker.totalFundAmount();
     const lenderInterestAfter = await locker.totalInterest();
 
     
@@ -263,7 +263,7 @@ describe("Loan", function () {
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
@@ -289,7 +289,7 @@ describe("Loan", function () {
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
@@ -303,11 +303,11 @@ describe("Loan", function () {
 
     await time.increase(duration.days(2));
 
-    const borrowerBalanceBefore = await fundToken.balanceOf(borrower);
+    const borrowerBalanceBefore = await collateralToken.balanceOf(borrower);
 
     await loan.connect(borrower).withdrawCollateral();
 
-    const borrowerBalanceAfter = await fundToken.balanceOf(borrower);
+    const borrowerBalanceAfter = await collateralToken.balanceOf(borrower);
     const collateralAmountAfter = await locker.collateralAmount();
 
     expect(borrowerBalanceAfter - borrowerBalanceBefore).to.equal(ethers.parseEther("30"));
@@ -328,7 +328,7 @@ describe("Loan", function () {
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
@@ -353,7 +353,7 @@ describe("Loan", function () {
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
@@ -400,7 +400,7 @@ describe("Loan", function () {
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
@@ -430,7 +430,7 @@ describe("Loan", function () {
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
@@ -442,9 +442,9 @@ describe("Loan", function () {
     
     await time.increase(duration.days(2));
 
-    const balanceBefore = await fundToken.balanceOf(user);
+    const balanceBefore = await collateralToken.balanceOf(user);
     await loan.connect(user).claimDefault();
-    const balanceAfter = await fundToken.balanceOf(user);
+    const balanceAfter = await collateralToken.balanceOf(user);
 
     expect(balanceAfter - balanceBefore).to.equal(ethers.parseEther("30"));
   })
@@ -468,7 +468,7 @@ describe("Loan", function () {
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
@@ -499,7 +499,7 @@ describe("Loan", function () {
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await fundToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
