@@ -40,7 +40,7 @@ tbu
 - [x] test codes for Default & Liquidate functionality
 - [x] Separate basic transfer functionality working for both erc20 and native token
 - [x] limit function call directly from locker
-- [ ] complete function call auth check
+- [x] complete function call auth check
 - [ ] test codes for native tokens for Loan.ts
 - [ ] diamondcut pattern adoption
 - [ ] scenario test codes
