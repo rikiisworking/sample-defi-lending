@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Admin, LoanFactory, LockerFactory, MockToken } from "../typechain-types";
+import { Admin, LoanFactory, LockerFactory, MockToken, Loan, Locker } from "../typechain-types";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 
@@ -10,6 +10,10 @@ describe("Admin", function () {
 
     let loanFactory: LoanFactory;
     let lockerFactory: LockerFactory;
+
+    let loan: Loan;
+    let locker: Locker;
+
     let owner: HardhatEthersSigner;
     let user1: HardhatEthersSigner;
     let user2: HardhatEthersSigner;
@@ -22,6 +26,16 @@ describe("Admin", function () {
         await fundToken.waitForDeployment();
         const mintAmount = ethers.parseUnits("100000", decimals);
         await fundToken.mint(owner.address, mintAmount);
+        
+        const loanFactory_ = await ethers.getContractFactory("Loan");
+        const lockerFactory_ = await ethers.getContractFactory("Locker");
+        
+        loan = await loanFactory_.deploy();
+        locker = await lockerFactory_.deploy();
+        
+        await loan.waitForDeployment();
+        await locker.waitForDeployment();
+
     });
 
     beforeEach(async () => {
@@ -30,11 +44,11 @@ describe("Admin", function () {
         await admin.waitForDeployment();
 
         const _loanFactory = await ethers.getContractFactory("LoanFactory");
-        loanFactory = await _loanFactory.deploy(admin);
+        loanFactory = await _loanFactory.deploy(admin, loan);
         await loanFactory.waitForDeployment();
 
         const _lockerFactory = await ethers.getContractFactory("LockerFactory");
-        lockerFactory = await _lockerFactory.deploy(admin);
+        lockerFactory = await _lockerFactory.deploy(admin, locker);
         await lockerFactory.waitForDeployment();
     })
 

@@ -31,10 +31,14 @@ describe("Locker", function () {
 
     beforeEach(async () => {
         const lockerFactory = await ethers.getContractFactory("Locker");
-        locker = await lockerFactory.deploy(ethers.ZeroAddress, ethers.ZeroAddress);
-        tokenLocker = await lockerFactory.deploy(fundToken, collateralToken);
+        locker = await lockerFactory.deploy();
         await locker.waitForDeployment();
+        await locker.initialize(ethers.ZeroAddress, ethers.ZeroAddress);
+
+        tokenLocker = await lockerFactory.deploy();
         await tokenLocker.waitForDeployment();
+        await tokenLocker.initialize(fundToken, collateralToken);
+        
         await locker.setLoanAddress(owner.address);
         await tokenLocker.setLoanAddress(owner.address);
     })

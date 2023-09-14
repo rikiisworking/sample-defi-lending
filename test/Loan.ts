@@ -53,8 +53,9 @@ describe("Loan", function () {
     await admin.waitForDeployment();
 
     const lockerFactory = await ethers.getContractFactory("Locker");
-    locker = await lockerFactory.deploy(fundToken, collateralToken);
+    locker = await lockerFactory.deploy();
     await locker.waitForDeployment();
+    await locker.initialize(fundToken, collateralToken);
 
     const currentTimestamp = await time.latest();
     const initValue = {
@@ -75,8 +76,9 @@ describe("Loan", function () {
     };
 
     const loanFactory = await ethers.getContractFactory("Loan");
-    loan = await loanFactory.deploy(initValue)
+    loan = await loanFactory.deploy();
     await loan.waitForDeployment();
+    loan.initialize(initValue);
     await locker.setLoanAddress(loan);
   });
 

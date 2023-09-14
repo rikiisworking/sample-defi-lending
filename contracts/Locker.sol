@@ -7,8 +7,8 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 contract Locker {
     using SafeERC20 for IERC20Detail;
 
-    IERC20Detail public immutable fundAsset;
-    IERC20Detail public immutable collateralAsset;
+    IERC20Detail public fundAsset;
+    IERC20Detail public collateralAsset;
 
     address public loanAddress;
    
@@ -18,6 +18,8 @@ contract Locker {
     uint256 public collateralAmount;
     uint256 public totalInterest;
 
+    bool initialized;
+
     mapping(address userAddress => uint256 depositAmount) public deposits;
 
     modifier onlyLoan() {
@@ -25,7 +27,9 @@ contract Locker {
         _;
     }
 
-    constructor(address _fundAsset, address _collateralAsset) {
+    function initialize (address _fundAsset, address _collateralAsset) external {
+        require(!initialized, "already initialized");
+        initialized = true;
         fundAsset = IERC20Detail(_fundAsset);
         collateralAsset = IERC20Detail(_collateralAsset);
     }
@@ -80,7 +84,6 @@ contract Locker {
 
     function returnAsset(address _from, uint256 principal, uint256 interest) external payable onlyLoan {
         require(lendAmount > 0, "not borrowed yet");
-        
         uint256 amount = principal + interest;
         _receive(fundAsset, _from, amount);
         totalFundAmount += (principal+interest);

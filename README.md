@@ -43,5 +43,6 @@ tbu
 - [x] complete function call auth check
 - [ ] test codes for native tokens for Loan.ts
 - [ ] diamondcut pattern adoption
+- [ ] clone factory pattern adpotion
 - [ ] scenario test codes
 - [ ] update readme with detailed description
