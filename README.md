@@ -44,3 +44,4 @@ tbu
 - [ ] test codes for native tokens for Loan.ts
 - [ ] diamondcut pattern adoption
 - [ ] scenario test codes
+- [ ] update readme with detailed description
