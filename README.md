@@ -50,10 +50,10 @@ tbu
 ## clone factory pattern's gas savings
 
 - check gas consumption of `createProposal` function
-`3997338` -> `479817`: saved `3517521` gas
+- `3997338` -> `479817`: saved `3517521` gas
 <details>
   <summary>gas usage without clone</summary>
-  ```
+```
 ·--------------------------------|----------------------------|-------------|-----------------------------·
 |      Solc version: 0.8.19      ·  Optimizer enabled: false  ·  Runs: 200  ·  Block limit: 30000000 gas  │
 ·································|····························|·············|······························
@@ -94,7 +94,7 @@ tbu
 
 <details>
   <summary>gas usage with clone</summary>
-  ```
+```
 ·--------------------------------|----------------------------|-------------|-----------------------------·
 |      Solc version: 0.8.19      ·  Optimizer enabled: false  ·  Runs: 200  ·  Block limit: 30000000 gas  │
 ·································|····························|·············|······························
