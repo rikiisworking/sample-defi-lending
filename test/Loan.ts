@@ -24,7 +24,8 @@ describe("Loan", function () {
   let admin: Admin;
   let loan: Loan;
   let locker: Locker;
-  let mockToken: MockToken;
+  let fundToken: MockToken;
+  let collateralToken: MockToken;
   let owner: HardhatEthersSigner;
   let borrower: HardhatEthersSigner;
   let user: HardhatEthersSigner;
@@ -34,13 +35,16 @@ describe("Loan", function () {
   before(async () => {
     [owner, borrower, user] = await ethers.getSigners();
     const tokenFactory = await ethers.getContractFactory("MockToken");
-    mockToken = await tokenFactory.deploy("Mock Token", "MT", decimals);
-    await mockToken.waitForDeployment();
+    fundToken = await tokenFactory.deploy("Fund Token", "MT", decimals);
+    collateralToken = await tokenFactory.deploy("Collateral Token", "CT", decimals);
+    await fundToken.waitForDeployment();
+    await collateralToken.waitForDeployment();
 
     const mintAmount = ethers.parseUnits("100000", decimals);
-    await mockToken.mint(owner.address, mintAmount);
-    await mockToken.mint(borrower.address, mintAmount);
-    await mockToken.mint(user.address, mintAmount);
+    await fundToken.mint(owner.address, mintAmount);
+    await fundToken.mint(borrower.address, mintAmount);
+    await fundToken.mint(user.address, mintAmount);
+    await collateralToken.mint(borrower.address, mintAmount);
   });
 
   this.beforeEach(async () => {
@@ -49,7 +53,7 @@ describe("Loan", function () {
     await admin.waitForDeployment();
 
     const lockerFactory = await ethers.getContractFactory("Locker");
-    locker = await lockerFactory.deploy(mockToken);
+    locker = await lockerFactory.deploy(fundToken, collateralToken);
     await locker.waitForDeployment();
 
     const currentTimestamp = await time.latest();
@@ -66,6 +70,8 @@ describe("Loan", function () {
       collateralRatio: 3000,
       lenderInterestAPY: 1000,
       collateralDepositStartDate: currentTimestamp + duration.days(10),
+
+      collateralAssetPriceRatio: 10000
     };
 
     const loanFactory = await ethers.getContractFactory("Loan");
@@ -82,7 +88,8 @@ describe("Loan", function () {
       2000,
       3000,
       1000,
-      currentTimestamp + duration.days(10)
+      currentTimestamp + duration.days(10),
+      10000
     ]
     await loan.approveProposal(updateValue);
     await loan.info().then((result: LoanInfoStruct) => {
@@ -99,7 +106,7 @@ describe("Loan", function () {
       expect(amount).to.equal(BigInt(0));
     });
 
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
     await locker.deposits(user).then((amount: BigInt) => {
       expect(amount).to.equal(ethers.parseEther("100"));
@@ -109,20 +116,20 @@ describe("Loan", function () {
   it("depositFunds() can't deposit over loanLimit", async () => {
     await time.increase(duration.days(3));
 
-    await mockToken.connect(user).approve(locker, ethers.parseEther("1100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("1100"));
     await expect(
       loan.connect(user).depositFunds(ethers.parseEther("1100"))
     ).to.be.revertedWith("can't deposit more than loan limit");
   });
 
   it("depositFunds() shouldn't work before depositStartDate or after collateralDepositStartDate", async () => {
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await expect(
       loan.connect(user).depositFunds(ethers.parseEther("100"))
     ).to.be.revertedWith("currently unavailable");
-    await mockToken.connect(user).approve(locker, 0);
+    await fundToken.connect(user).approve(locker, 0);
     await time.increase(duration.days(11));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await expect(
       loan.connect(user).depositFunds(ethers.parseEther("100"))
     ).to.be.revertedWith("currently unavailable");
@@ -130,13 +137,13 @@ describe("Loan", function () {
 
   it("depositCollateral() should deposit collateral into locker", async () => {
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
     await time.increase(duration.days(7));
     await locker.collateralAmount().then((amount: BigInt) => {
         expect(amount).to.equal(BigInt(0));
     })
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await locker.collateralAmount().then((amount: BigInt) => {
         expect(amount).to.equal(ethers.parseEther("30"));
@@ -150,9 +157,9 @@ describe("Loan", function () {
 
   it("depositCollateral() shouldn't work before collateralDepositStartDate or 3 days after collateralDepositStartDate", async () => {
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await expect(loan.connect(borrower).depositCollateral()).to.be.revertedWith("currently unavailable");
     await time.increase(duration.days(10));
     await expect(loan.connect(borrower).depositCollateral()).to.be.revertedWith("currently unavailable");
@@ -160,16 +167,16 @@ describe("Loan", function () {
 
   it("takeLoan() should work properly", async () => {
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
 
-    const balanceBefore = await mockToken.balanceOf(borrower);
+    const balanceBefore = await fundToken.balanceOf(borrower);
     await loan.connect(borrower).takeLoan();
-    const balanceAfter = await mockToken.balanceOf(borrower);
+    const balanceAfter = await fundToken.balanceOf(borrower);
     expect(balanceAfter - balanceBefore).to.equal(ethers.parseEther("100"));
     
   })
@@ -180,14 +187,14 @@ describe("Loan", function () {
 
   it("takeLoan() shouldn't work before collateralDepositStartDate or after loanDuration", async () => {
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(3));
     await expect(loan.connect(borrower).takeLoan()).to.be.revertedWith("currently unavailable");
 
     await time.increase(duration.days(4));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     
     await time.increase(duration.days(60));
@@ -196,7 +203,7 @@ describe("Loan", function () {
 
   it("takeLoan() shouldn't work before collateral has been deposited", async () => {
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
@@ -214,28 +221,28 @@ describe("Loan", function () {
     const adminApproveAmount = borrowerInterest - lenderInterest;
 
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
     await time.increase(duration.days(30));
     
 
-    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
 
-    const adminFeeBefore = await admin.collectedFees(mockToken);
-    const totalBalanceBefore = await locker.totalDeposits();
+    const adminFeeBefore = await admin.collectedFees(fundToken);
+    const totalBalanceBefore = await locker.totalFundAmount();
     const lenderInterestBefore = await locker.totalInterest();
     
     await loan.connect(borrower).returnLoan();
 
-    const adminFeeAfter = await admin.collectedFees(mockToken);
-    const totalBalanceAfter = await locker.totalDeposits();
+    const adminFeeAfter = await admin.collectedFees(fundToken);
+    const totalBalanceAfter = await locker.totalFundAmount();
     const lenderInterestAfter = await locker.totalInterest();
 
     
@@ -255,15 +262,15 @@ describe("Loan", function () {
     const returnAmount = ethers.parseEther("100") + interest;
 
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
-    await mockToken.connect(borrower).approve(locker, returnAmount);
+    await fundToken.connect(borrower).approve(locker, returnAmount);
     await time.increase(duration.days(10));
     await expect(loan.connect(borrower).returnLoan()).to.be.revertedWith("currently unavailable");
     await time.increase(duration.days(40));
@@ -281,29 +288,29 @@ describe("Loan", function () {
     const adminApproveAmount = borrowerInterest - lenderInterest;
 
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
     await time.increase(duration.days(30));
     
 
-    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
 
     await loan.connect(borrower).returnLoan();
 
     await time.increase(duration.days(2));
 
-    const borrowerBalanceBefore = await mockToken.balanceOf(borrower);
+    const borrowerBalanceBefore = await collateralToken.balanceOf(borrower);
 
     await loan.connect(borrower).withdrawCollateral();
 
-    const borrowerBalanceAfter = await mockToken.balanceOf(borrower);
+    const borrowerBalanceAfter = await collateralToken.balanceOf(borrower);
     const collateralAmountAfter = await locker.collateralAmount();
 
     expect(borrowerBalanceAfter - borrowerBalanceBefore).to.equal(ethers.parseEther("30"));
@@ -320,11 +327,11 @@ describe("Loan", function () {
 
   it("withdrawCollateral() should work after returning loan", async () => {
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
@@ -345,27 +352,27 @@ describe("Loan", function () {
     const adminApproveAmount = borrowerInterest - lenderInterest;
 
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
     await time.increase(duration.days(30));
     
 
-    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
     
     await loan.connect(borrower).returnLoan();
 
     await time.increase(duration.days(2));
 
-    const userBalanceBefore = await mockToken.connect(user).balanceOf(user);
+    const userBalanceBefore = await fundToken.connect(user).balanceOf(user);
     await loan.connect(user).claim();
-    const userBalanceAfter = await mockToken.connect(user).balanceOf(user);
+    const userBalanceAfter = await fundToken.connect(user).balanceOf(user);
 
     expect(userBalanceAfter - userBalanceBefore).to.equal(ethers.parseEther("100") + lenderInterest);
   })
@@ -376,7 +383,7 @@ describe("Loan", function () {
 
   it("claim() should be called after return due date", async () => {
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
     await expect(loan.connect(user).claim()).to.be.revertedWith("currently unavailable");
   })
@@ -392,19 +399,19 @@ describe("Loan", function () {
     const adminApproveAmount = borrowerInterest - lenderInterest;
 
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
     await time.increase(duration.days(30));
     
 
-    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
     
     await time.increase(duration.days(2));
 
@@ -422,25 +429,25 @@ describe("Loan", function () {
     const adminApproveAmount = borrowerInterest - lenderInterest;
 
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
     await time.increase(duration.days(30));
     
 
-    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
     
     await time.increase(duration.days(2));
 
-    const balanceBefore = await mockToken.balanceOf(user);
+    const balanceBefore = await collateralToken.balanceOf(user);
     await loan.connect(user).claimDefault();
-    const balanceAfter = await mockToken.balanceOf(user);
+    const balanceAfter = await collateralToken.balanceOf(user);
 
     expect(balanceAfter - balanceBefore).to.equal(ethers.parseEther("30"));
   })
@@ -460,19 +467,19 @@ describe("Loan", function () {
     const adminApproveAmount = borrowerInterest - lenderInterest;
 
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
     await time.increase(duration.days(30));
     
 
-    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
     
     await time.increase(duration.days(1));
 
@@ -491,19 +498,19 @@ describe("Loan", function () {
     const adminApproveAmount = borrowerInterest - lenderInterest;
 
     await time.increase(duration.days(3));
-    await mockToken.connect(user).approve(locker, ethers.parseEther("100"));
+    await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
 
     await time.increase(duration.days(7));
-    await mockToken.connect(borrower).approve(locker, ethers.parseEther("30"));
+    await collateralToken.connect(borrower).approve(locker, ethers.parseEther("30"));
     await loan.connect(borrower).depositCollateral();
     await loan.connect(borrower).takeLoan();
 
     await time.increase(duration.days(30));
     
 
-    await mockToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await mockToken.connect(borrower).approve(admin, adminApproveAmount);
+    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
+    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
     
     await loan.connect(borrower).returnLoan();
 

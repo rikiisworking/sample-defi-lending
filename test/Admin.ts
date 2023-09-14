@@ -6,7 +6,8 @@ import { time } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("Admin", function () {
     let admin: Admin;
-    let mockToken: MockToken;
+    let fundToken: MockToken;
+
     let loanFactory: LoanFactory;
     let lockerFactory: LockerFactory;
     let owner: HardhatEthersSigner;
@@ -17,10 +18,10 @@ describe("Admin", function () {
     before(async () => {
         [owner, user1, user2] = await ethers.getSigners();
         const tokenFactory = await ethers.getContractFactory("MockToken");
-        mockToken = await tokenFactory.deploy("Mock Token", "MT", decimals);
-        await mockToken.waitForDeployment();
+        fundToken = await tokenFactory.deploy("Fund Token", "MT", decimals);
+        await fundToken.waitForDeployment();
         const mintAmount = ethers.parseUnits("100000", decimals);
-        await mockToken.mint(owner.address, mintAmount);
+        await fundToken.mint(owner.address, mintAmount);
     });
 
     beforeEach(async () => {
@@ -102,7 +103,7 @@ describe("Admin", function () {
             await time.latest() + 1000,
             30,
             1000
-        ], ethers.ZeroAddress)
+        ], ethers.ZeroAddress, ethers.ZeroAddress)
         await lockerFactory.lockerSize().then((size: BigInt) => {
             expect(size).to.equal(BigInt(1));
         })
@@ -112,12 +113,12 @@ describe("Admin", function () {
     })
 
     it("collectFee() should send token to admin contract", async () => {
-        await admin.collectedFees(mockToken).then((amount: BigInt) => {
+        await admin.collectedFees(fundToken).then((amount: BigInt) => {
             expect(amount).to.equal(BigInt(0));
         })
-        await mockToken.approve(admin, ethers.parseEther("100"));
-        await admin.collectFee(owner, mockToken, ethers.parseEther("100"));
-        await admin.collectedFees(mockToken).then((amount: BigInt) => {
+        await fundToken.approve(admin, ethers.parseEther("100"));
+        await admin.collectFee(owner, fundToken, ethers.parseEther("100"));
+        await admin.collectedFees(fundToken).then((amount: BigInt) => {
             expect(amount).to.equal(ethers.parseEther("100"));
         })
 
@@ -135,11 +136,11 @@ describe("Admin", function () {
 
     
     it("withdrawFee() should increase owner erc20 token balance", async () => {
-        await mockToken.approve(admin, ethers.parseEther("100"));
-        await admin.collectFee(owner, mockToken, ethers.parseEther("100"));
-        const balanceBefore = await mockToken.balanceOf(owner);
-        await admin.withdrawFee(mockToken);
-        const balanceAfter = await mockToken.balanceOf(owner);
+        await fundToken.approve(admin, ethers.parseEther("100"));
+        await admin.collectFee(owner, fundToken, ethers.parseEther("100"));
+        const balanceBefore = await fundToken.balanceOf(owner);
+        await admin.withdrawFee(fundToken);
+        const balanceAfter = await fundToken.balanceOf(owner);
         await expect(balanceAfter-balanceBefore).to.equal(ethers.parseEther("100"));
     })
 

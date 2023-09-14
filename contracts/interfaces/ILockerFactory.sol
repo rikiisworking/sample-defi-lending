@@ -2,5 +2,5 @@
 pragma solidity ^0.8.18;
 
 interface ILockerFactory {
-    function createLocker(address _asset) external returns (address);
+    function createLocker(address _fundAsset, address _collateralAsset) external returns (address);
 }
