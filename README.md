@@ -38,7 +38,7 @@ tbu
 - [x] Set different assets for collateral and funding
 - [x] Default & Liquidate functionality
 - [x] test codes for Default & Liquidate functionality
-- [ ] Separate basic transfer functionality working for both erc20 and native token
+- [x] Separate basic transfer functionality working for both erc20 and native token
 - [x] limit function call directly from locker
 - [ ] complete function call auth check
 - [ ] test codes for native tokens for Loan.ts

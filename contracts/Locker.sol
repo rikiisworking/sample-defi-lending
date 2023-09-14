@@ -38,37 +38,20 @@ contract Locker {
     }
 
     function depositFunds(address _from, uint256 amount) external payable onlyLoan {
-        if(address(fundAsset) != address(0)){
-            require(msg.value == 0, "native token not supported");
-            fundAsset.safeTransferFrom(_from, address(this), amount);
-        }else{
-            require(msg.value == amount, "invalid amount recieved");
-        }
-
+        _receive(fundAsset, _from, amount);
         totalFundAmount += amount;
         deposits[_from] += amount;
     }
 
     function depositCollateral(address _from, uint256 amount) public payable onlyLoan {
-        if(address(collateralAsset) != address(0)){
-            require(msg.value == 0, "native token not supported");
-            collateralAsset.safeTransferFrom(_from, address(this), amount);
-        }else{
-            require(msg.value == amount, "invalid amount recieved");
-        }
+        _receive(collateralAsset, _from, amount);
         collateralAmount += amount;
     }
 
     function withdrawCollateral(address _to) external onlyLoan {
         uint256 amount = collateralAmount;
         collateralAmount = 0;
-
-        if (address(collateralAsset) != address(0)){
-            collateralAsset.safeTransfer(_to, amount);
-        } else {
-            (bool sent, ) = _to.call{ value: amount }("");
-            require(sent, "failed to send native token");
-        }
+        _send(collateralAsset, _to, amount);
     } 
 
     function claim(address _from) external onlyLoan {
@@ -78,54 +61,48 @@ contract Locker {
         
         deposits[_from] = 0;
         totalFundAmount -= claimAmount;
-
-        if (address(fundAsset) != address(0)) {
-            fundAsset.safeTransfer(_from, claimAmount);
-        } else {
-            (bool sent, ) = _from.call{ value: claimAmount }("");
-            require(sent, "failed to send native token");
-        }
+        _send(fundAsset, _from, claimAmount);
     }
 
     function claimDefault(address _from) external onlyLoan {
         uint256 userDeposit = deposits[_from];
         uint256 liquidatedUserAmount = collateralAmount * userDeposit / lendAmount;
         deposits[_from] = 0;
-
-        if (address(collateralAsset) != address(0)) {
-            collateralAsset.safeTransfer(_from, liquidatedUserAmount);
-        } else {
-            (bool sent, ) = _from.call{ value: liquidatedUserAmount }("");
-            require(sent, "failed to send native token");
-        }
+        _send(collateralAsset, _from, liquidatedUserAmount);
     }
 
     function lendAsset(address _to) external onlyLoan {
         require(lendAmount == 0, "already borrowed");
         lendAmount = totalFundAmount;
         totalFundAmount -= lendAmount;
-
-        if (address(fundAsset) != address(0)) {
-            fundAsset.safeTransfer(_to, lendAmount);
-        } else {
-            (bool sent, ) = _to.call{ value: lendAmount }("");
-            require(sent, "failed to send native token");
-        }
+        _send(fundAsset, _to, lendAmount);
     }
 
     function returnAsset(address _from, uint256 principal, uint256 interest) external payable onlyLoan {
         require(lendAmount > 0, "not borrowed yet");
         
         uint256 amount = principal + interest;
-        if(address(fundAsset) != address(0)){
-            require(msg.value == 0, "native token not supported");
-            fundAsset.safeTransferFrom(_from, address(this), amount);
-        }else{
-            require(msg.value == amount, "invalid amount recieved");
-        }
-        
+        _receive(fundAsset, _from, amount);
         totalFundAmount += (principal+interest);
         returnedAmount = principal;
         totalInterest = interest;
+    }
+
+    function _receive(IERC20Detail asset, address _from, uint256 amount) internal {
+        if(address(asset) != address(0)){
+            require(msg.value == 0, "native token not supported");
+            asset.safeTransferFrom(_from, address(this), amount);
+        }else{
+            require(msg.value == amount, "invalid amount received");
+        }
+    }
+
+    function _send(IERC20Detail asset, address _to, uint256 amount) internal {
+        if(address(asset) != address(0)){
+            asset.safeTransfer(_to, amount);
+        }else {
+            (bool sent, ) = _to.call{ value: amount }("");
+            require(sent, "failed to send native token");
+        }
     }
 }
