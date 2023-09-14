@@ -26,11 +26,26 @@ contract Loan {
     LoanInfo public info;
     bool public approved;
 
+    modifier onlyOwner() {
+        require(msg.sender == IAdmin(info.admin).owner(), "only owner can call");
+        _;
+    }
+
+    modifier onlyBorrower() {
+        require(msg.sender == info.borrower, "only borrower can call");
+        _;
+    }
+
+    modifier onlyLender() {
+        require(ILocker(info.locker).deposits(msg.sender) > 0, "only lender can call");
+        _;
+    }
+
     constructor(LoanInfo memory _info){
         info = _info;
     }
 
-    function approveProposal(uint256[8] memory _conditions) external {
+    function approveProposal(uint256[8] memory _conditions) external onlyOwner{
         info.loanLimit = _conditions[0];
         info.depositStartDate = _conditions[1];
         info.loanDurationInDays = _conditions[2];
@@ -45,7 +60,7 @@ contract Loan {
         approved = true;
     }
 
-    function updateCollateralAssetPriceRatio(uint256 _ratio) external {
+    function updateCollateralAssetPriceRatio(uint256 _ratio) external onlyOwner{
         info.collateralAssetPriceRatio = _ratio;
     }
 
@@ -56,24 +71,21 @@ contract Loan {
         ILocker(info.locker).depositFunds{ value: msg.value }(msg.sender, amount);
     }
 
-    function depositCollateral() external payable {
-        require(msg.sender == info.borrower, "only borrower can deposit collateral");
+    function depositCollateral() external payable onlyBorrower{
         require(block.timestamp >= info.collateralDepositStartDate && block.timestamp < info.collateralDepositStartDate + 48 hours, "currently unavailable");
         
         uint256 requiredCollateral = (ILocker(info.locker).totalFundAmount() * info.collateralRatio * info.collateralAssetPriceRatio) / 100000000;
         ILocker(info.locker).depositCollateral{value: msg.value}(msg.sender, requiredCollateral);
     }
 
-    function takeLoan() external {
-        require(msg.sender == info.borrower, "only borrower can take loan");
+    function takeLoan() external onlyBorrower{
         require(block.timestamp >= info.collateralDepositStartDate && block.timestamp < info.collateralDepositStartDate + info.loanDurationInDays * 86400, "currently unavailable"); 
         uint256 requiredCollateral = (ILocker(info.locker).totalFundAmount() * info.collateralRatio) / 10000;
         require(ILocker(info.locker).collateralAmount() == requiredCollateral, "collateral required to take loan");
         ILocker(info.locker).lendAsset(info.borrower);
     }
 
-    function returnLoan() external payable {
-        require(msg.sender == info.borrower, "only borrower can return loan");
+    function returnLoan() external payable onlyBorrower{
         require(block.timestamp >= info.collateralDepositStartDate + (info.loanDurationInDays) * 86400 && 
             block.timestamp < info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400,"currently unavailable");
         require(ILocker(info.locker).returnedAmount() == 0 && ILocker(info.locker).totalInterest() == 0, "already returned");
@@ -90,23 +102,20 @@ contract Loan {
         }
     }
 
-    function withdrawCollateral() external {
-        require(msg.sender == info.borrower, "only borrower can withdraw collateral");
+    function withdrawCollateral() external onlyBorrower{
         require(block.timestamp >= info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400, "currently unavailable");
         require(ILocker(info.locker).returnedAmount() == ILocker(info.locker).lendAmount(), "loan not returned yet");
         ILocker(info.locker).withdrawCollateral(msg.sender);
     }
 
-    function claim() external {
-        require(ILocker(info.locker).deposits(msg.sender) > 0, "only lender can claim");
+    function claim() external onlyLender{
         require(block.timestamp > info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400, "currently unavailable");
         require(ILocker(info.locker).returnedAmount() == ILocker(info.locker).lendAmount(), "loan default");
 
         ILocker(info.locker).claim(msg.sender);
     }
 
-    function claimDefault() external {
-        require(ILocker(info.locker).deposits(msg.sender) > 0, "only lender can claim");
+    function claimDefault() external onlyLender{
         require(block.timestamp > info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400, "currently unavailable");
         require(ILocker(info.locker).returnedAmount() == 0, "loan returned");
 

@@ -13,6 +13,7 @@ contract LockerFactory {
     }
 
     function createLocker(address _fundAsset, address _collateralAsset) external returns (address) {
+        require(msg.sender == admin, "unauthorized");
         Locker locker = new Locker(_fundAsset, _collateralAsset);
         lockers[lockerSize++] = address(locker);
         return address(locker);

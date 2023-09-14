@@ -13,6 +13,7 @@ contract LoanFactory {
     }
 
     function createLoan(LoanInfo memory _conditions) external returns (address) {
+        require(msg.sender == admin, "unauthorized");
         Loan loan = new Loan(_conditions);
         loans[loanSize++] = address(loan);
         return address(loan);

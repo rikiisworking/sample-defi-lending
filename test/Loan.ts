@@ -153,7 +153,7 @@ describe("Loan", function () {
 
   it("depositCollateral() should be called by borrower", async () => {
     await time.increase(duration.days(10));
-    await expect(loan.connect(user).depositCollateral()).to.be.revertedWith("only borrower can deposit collateral");
+    await expect(loan.connect(user).depositCollateral()).to.be.revertedWith("only borrower can call");
   })
 
   it("depositCollateral() shouldn't work before collateralDepositStartDate or 3 days after collateralDepositStartDate", async () => {
@@ -183,7 +183,7 @@ describe("Loan", function () {
   })
 
   it("takeLoan() should be called by borrower", async () => {
-    await expect(loan.connect(user).takeLoan()).to.be.revertedWith("only borrower can take loan");
+    await expect(loan.connect(user).takeLoan()).to.be.revertedWith("only borrower can call");
   })
 
   it("takeLoan() shouldn't work before collateralDepositStartDate or after loanDuration", async () => {
@@ -254,7 +254,7 @@ describe("Loan", function () {
   })
   
   it("returnLoan() should be called by borrower", async () => {
-    await expect(loan.connect(user).returnLoan()).to.be.revertedWith("only borrower can return loan");
+    await expect(loan.connect(user).returnLoan()).to.be.revertedWith("only borrower can call");
   })
 
   it("returnLoan() shouldn't work before return date or after return date + 2 days", async () => {
@@ -319,7 +319,7 @@ describe("Loan", function () {
   })  
 
   it("withdrawCollateral() should be called only by borrower", async () => {
-    await expect(loan.connect(user).withdrawCollateral()).to.be.revertedWith("only borrower can withdraw collateral");
+    await expect(loan.connect(user).withdrawCollateral()).to.be.revertedWith("only borrower can call");
   })
 
   it("withdrawCollateral() should work only after return due date", async () => {
@@ -379,7 +379,7 @@ describe("Loan", function () {
   })
 
   it("claim() should be called by lender", async () => {
-    await expect(loan.connect(borrower).claim()).to.be.revertedWith("only lender can claim");
+    await expect(loan.connect(borrower).claim()).to.be.revertedWith("only lender can call");
   })
 
   it("claim() should be called after return due date", async () => {
@@ -454,7 +454,7 @@ describe("Loan", function () {
   })
   
   it("claimDefault() can be called only by lender", async () => {
-    await expect(loan.connect(user).claimDefault()).to.be.revertedWith("only lender can claim");
+    await expect(loan.connect(user).claimDefault()).to.be.revertedWith("only lender can call");
   })
 
   it("claimDefault() can be called only after return due date", async () => {
