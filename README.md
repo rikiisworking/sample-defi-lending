@@ -53,6 +53,9 @@ tbu
 - `3997338` -> `479817`: saved `3517521` gas
 <details>
   <summary>gas usage without clone</summary>
+
+following result comes from running testcodes with REPORT_GAS=true option
+  
 ```bash
 ·--------------------------------|----------------------------|-------------|-----------------------------·
 |      Solc version: 0.8.19      ·  Optimizer enabled: false  ·  Runs: 200  ·  Block limit: 30000000 gas  │
@@ -94,6 +97,9 @@ tbu
 
 <details>
   <summary>gas usage with clone</summary>
+
+following result comes from running testcodes with REPORT_GAS=true option
+  
 ```bash
 ·--------------------------------|----------------------------|-------------|-----------------------------·
 |      Solc version: 0.8.19      ·  Optimizer enabled: false  ·  Runs: 200  ·  Block limit: 30000000 gas  │
