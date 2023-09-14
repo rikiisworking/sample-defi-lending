@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.19;
 
-import { Locker } from "./Locker.sol";
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
+import {Locker} from "./Locker.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract LockerFactory {
     mapping(uint256 => address) public lockers;
@@ -20,12 +20,16 @@ contract LockerFactory {
         lockerImplementationAddress = _address;
     }
 
-    function createLocker(address _fundAsset, address _collateralAsset) external returns (address) {
+    function createLocker(
+        address _fundAsset,
+        address _collateralAsset
+    ) external returns (address) {
         require(msg.sender == admin, "unauthorized");
-        Locker locker = Locker(payable(Clones.clone(lockerImplementationAddress)));
+        Locker locker = Locker(
+            payable(Clones.clone(lockerImplementationAddress))
+        );
         locker.initialize(_fundAsset, _collateralAsset);
         lockers[lockerSize++] = address(locker);
         return address(locker);
     }
-
 }

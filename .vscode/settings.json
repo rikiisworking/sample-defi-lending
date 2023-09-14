@@ -1,0 +1,47 @@
+{
+    "editor.rulers": [
+        80,
+        120
+    ],
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.renderWhitespace": "all",
+    "[javascript]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2,
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2,
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[solidity]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4,
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "JuanBlanco.solidity"
+    },
+    "solidity.compileUsingRemoteVersion": "v0.8.19+commit.7dd6d404",
+    "solidity.linter": "solhint",
+    "solidity.formatter": "prettier",
+    "solidity.solhintRules": {
+        "max-line-length": ["warn", 120],
+        "no-unused-vars": "warn",
+        "comprehensive-interface": "off",
+        "quotes": ["warn", "double"],
+        "contract-name-camelcase": "warn",
+        "event-name-camelcase": "warn",
+        "func-name-mixedcase": "warn",
+        "func-param-name-mixedcase": "warn",
+        "modifier-name-mixedcase": "warn",
+        "use-forbidden-name": "warn",
+        "var-name-mixedcase": "warn",
+        "func-order": "warn",
+        "imports-on-top": "warn",
+        "avoid-sha3": "warn"
+    },
+    "prettier.printWidth": 120
+}
