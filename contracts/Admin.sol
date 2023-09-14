@@ -35,6 +35,14 @@ contract Admin {
         loanFactory = ILoanFactory(_loanFactory);
     }
 
+    function updateLoanImplementation(address _address) external onlyOwner {
+        loanFactory.setLoanImpl(_address);
+    }
+
+    function updateLockerImplementation(address _address) external onlyOwner {
+        lockerFactory.setLockerImpl(_address);
+    }
+
     function addBorrower(address _address) external onlyOwner {
         borrowers[_address] = true;
     }

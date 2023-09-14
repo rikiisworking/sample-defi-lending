@@ -8,11 +8,16 @@ contract LoanFactory {
     mapping(uint256 => address) public loans;
     uint256 public loanSize;
     address immutable admin;
-    address immutable loanImplementationAddress;
+    address public loanImplementationAddress;
     
     constructor(address _admin, address _loanImpl) {
         admin = _admin;
         loanImplementationAddress = _loanImpl;
+    }
+
+    function setLoanImpl(address _address) external {
+        require(msg.sender == admin, "unauthorized");
+        loanImplementationAddress = _address;
     }
 
     function createLoan(LoanInfo memory _conditions) external returns (address) {

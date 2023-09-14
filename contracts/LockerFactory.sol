@@ -8,11 +8,16 @@ contract LockerFactory {
     mapping(uint256 => address) public lockers;
     uint256 public lockerSize;
     address immutable admin;
-    address immutable lockerImplementationAddress;
+    address public lockerImplementationAddress;
 
     constructor(address _admin, address _lockerImpl) {
         admin = _admin;
         lockerImplementationAddress = _lockerImpl;
+    }
+
+    function setLockerImpl(address _address) external {
+        require(msg.sender == admin, "unauthorized");
+        lockerImplementationAddress = _address;
     }
 
     function createLocker(address _fundAsset, address _collateralAsset) external returns (address) {
