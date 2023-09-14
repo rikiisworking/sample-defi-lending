@@ -1,22 +1,25 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const admin = await ethers.deployContract("Admin");
+  await admin.waitForDeployment();
+  console.log(`admin deployed: ${await admin.getAddress()}`);
 
-  const lockedAmount = ethers.parseEther("0.001");
+  const loan = await ethers.deployContract("Loan");
+  await loan.waitForDeployment();
+  console.log(`loan deployed: ${await loan.getAddress()}`);
 
-  const lock = await ethers.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
-  });
+  const locker = await ethers.deployContract("Locker");
+  await locker.waitForDeployment();
+  console.log(`locker deployed: ${await locker.getAddress()}`);
 
-  await lock.waitForDeployment();
+  const loanFactory = await ethers.deployContract("LoanFactory", [admin, loan]);
+  await loanFactory.waitForDeployment();
+  console.log(`loanFactory deployed: ${await loanFactory.getAddress()}`);
 
-  console.log(
-    `Lock with ${ethers.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
-  );
+  const lockerFactory = await ethers.deployContract("LockerFactory", [admin, locker]);
+  await lockerFactory.waitForDeployment();
+  console.log(`lockerFactory deployed: ${await lockerFactory.getAddress()}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
