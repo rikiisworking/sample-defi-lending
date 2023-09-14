@@ -25,6 +25,7 @@ struct LoanInfo {
 contract Loan {
     LoanInfo public info;
     bool public approved;
+    bool initialized;
 
     modifier onlyOwner() {
         require(msg.sender == IAdmin(info.admin).owner(), "only owner can call");
@@ -41,7 +42,9 @@ contract Loan {
         _;
     }
 
-    constructor(LoanInfo memory _info){
+    function initialize(LoanInfo memory _info) external {
+        require(!initialized, "already initialized");
+        initialized = true;
         info = _info;
     }
 
