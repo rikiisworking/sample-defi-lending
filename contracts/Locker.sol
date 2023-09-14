@@ -9,13 +9,21 @@ contract Locker {
 
     IERC20Detail public immutable fundAsset;
     IERC20Detail public immutable collateralAsset;
+
+    address public loanAddress;
    
     uint256 public totalFundAmount;
     uint256 public lendAmount;
     uint256 public returnedAmount;
     uint256 public collateralAmount;
     uint256 public totalInterest;
+
     mapping(address userAddress => uint256 depositAmount) public deposits;
+
+    modifier onlyLoan() {
+        require(msg.sender == loanAddress, "unauthorized");
+        _;
+    }
 
     constructor(address _fundAsset, address _collateralAsset) {
         fundAsset = IERC20Detail(_fundAsset);
@@ -24,7 +32,12 @@ contract Locker {
 
     receive() external payable {}
 
-    function depositFunds(address _from, uint256 amount) public payable {
+    function setLoanAddress(address _loanAddress) external {
+        require(loanAddress == address(0), "address already set");
+        loanAddress = _loanAddress;
+    }
+
+    function depositFunds(address _from, uint256 amount) external payable onlyLoan {
         if(address(fundAsset) != address(0)){
             require(msg.value == 0, "native token not supported");
             fundAsset.safeTransferFrom(_from, address(this), amount);
@@ -36,7 +49,7 @@ contract Locker {
         deposits[_from] += amount;
     }
 
-    function depositCollateral(address _from, uint256 amount) public payable {
+    function depositCollateral(address _from, uint256 amount) public payable onlyLoan {
         if(address(collateralAsset) != address(0)){
             require(msg.value == 0, "native token not supported");
             collateralAsset.safeTransferFrom(_from, address(this), amount);
@@ -46,7 +59,7 @@ contract Locker {
         collateralAmount += amount;
     }
 
-    function withdrawCollateral(address _to) public {
+    function withdrawCollateral(address _to) external onlyLoan {
         uint256 amount = collateralAmount;
         collateralAmount = 0;
 
@@ -58,7 +71,7 @@ contract Locker {
         }
     } 
 
-    function claim(address _from) public {
+    function claim(address _from) external onlyLoan {
         uint256 userDeposit = deposits[_from];
         uint256 interest = totalInterest * userDeposit / lendAmount;
         uint256 claimAmount = interest + userDeposit;
@@ -74,7 +87,7 @@ contract Locker {
         }
     }
 
-    function claimDefault(address _from) public {
+    function claimDefault(address _from) external onlyLoan {
         uint256 userDeposit = deposits[_from];
         uint256 liquidatedUserAmount = collateralAmount * userDeposit / lendAmount;
         deposits[_from] = 0;
@@ -87,7 +100,7 @@ contract Locker {
         }
     }
 
-    function lendAsset(address _to) public {
+    function lendAsset(address _to) external onlyLoan {
         require(lendAmount == 0, "already borrowed");
         lendAmount = totalFundAmount;
         totalFundAmount -= lendAmount;
@@ -100,7 +113,7 @@ contract Locker {
         }
     }
 
-    function returnAsset(address _from, uint256 principal, uint256 interest) public payable {
+    function returnAsset(address _from, uint256 principal, uint256 interest) external payable onlyLoan {
         require(lendAmount > 0, "not borrowed yet");
         
         uint256 amount = principal + interest;

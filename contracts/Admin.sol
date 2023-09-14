@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import { ILockerFactory } from "./interfaces/ILockerFactory.sol";
 import { ILoanFactory, LoanInfo } from "./interfaces/ILoanFactory.sol";
+import { ILocker } from "./interfaces/ILocker.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -71,7 +72,8 @@ contract Admin {
             0,
             10000
         );
-        loanFactory.createLoan(loanInfo);
+        address loanAddress = loanFactory.createLoan(loanInfo);
+        ILocker(lockerAddress).setLoanAddress(loanAddress);
     }
 
     function collectFee(address _from, address asset, uint256 amount) external payable{
