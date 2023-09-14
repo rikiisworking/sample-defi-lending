@@ -46,7 +46,7 @@ tbu
 - [x] clone factory pattern adpotion
 - [ ] scenario test codes
 - [ ] update readme with detailed description
-- [ ] add deploy scripts
+- [x] add deploy scripts
 
 ## clone factory pattern's gas savings
 
