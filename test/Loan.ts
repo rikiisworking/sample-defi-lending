@@ -77,6 +77,7 @@ describe("Loan", function () {
     const loanFactory = await ethers.getContractFactory("Loan");
     loan = await loanFactory.deploy(initValue)
     await loan.waitForDeployment();
+    await locker.setLoanAddress(loan);
   });
 
   it("approveProposal() should update condition and approve loan", async () => {
