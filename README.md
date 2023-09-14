@@ -41,11 +41,12 @@ tbu
 - [x] Separate basic transfer functionality working for both erc20 and native token
 - [x] limit function call directly from locker
 - [x] complete function call auth check
-- [ ] test codes for native tokens for Loan.ts
+- [ ] update test codes for native tokens
 - [ ] diamondcut pattern adoption
 - [x] clone factory pattern adpotion
 - [ ] scenario test codes
 - [ ] update readme with detailed description
+- [ ] add deploy scripts
 
 ## clone factory pattern's gas savings
 
