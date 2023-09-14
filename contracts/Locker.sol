@@ -64,7 +64,7 @@ contract Locker {
         uint256 claimAmount = interest + userDeposit;
         
         deposits[_from] = 0;
-        totalFundAmount -= userDeposit;
+        totalFundAmount -= claimAmount;
 
         if (address(fundAsset) != address(0)) {
             fundAsset.safeTransfer(_from, claimAmount);
