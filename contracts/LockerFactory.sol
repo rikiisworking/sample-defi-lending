@@ -20,14 +20,9 @@ contract LockerFactory {
         lockerImplementationAddress = _address;
     }
 
-    function createLocker(
-        address _fundAsset,
-        address _collateralAsset
-    ) external returns (address) {
+    function createLocker(address _fundAsset, address _collateralAsset) external returns (address) {
         require(msg.sender == admin, "unauthorized");
-        Locker locker = Locker(
-            payable(Clones.clone(lockerImplementationAddress))
-        );
+        Locker locker = Locker(payable(Clones.clone(lockerImplementationAddress)));
         locker.initialize(_fundAsset, _collateralAsset);
         lockers[lockerSize++] = address(locker);
         return address(locker);

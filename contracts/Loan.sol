@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {ILocker} from "./interfaces/ILocker.sol";
 import {IAdmin} from "./interfaces/IAdmin.sol";
+import {TransferLib} from "./libraries/TransferLib.sol";
 
 struct LoanInfo {
     address admin;
@@ -24,10 +25,7 @@ contract Loan {
     bool initialized;
 
     modifier onlyOwner() {
-        require(
-            msg.sender == IAdmin(info.admin).owner(),
-            "only owner can call"
-        );
+        require(msg.sender == IAdmin(info.admin).owner(), "only owner can call");
         _;
     }
 
@@ -37,10 +35,7 @@ contract Loan {
     }
 
     modifier onlyLender() {
-        require(
-            ILocker(info.locker).deposits(msg.sender) > 0,
-            "only lender can call"
-        );
+        require(ILocker(info.locker).deposits(msg.sender) > 0, "only lender can call");
         _;
     }
 
@@ -65,165 +60,87 @@ contract Loan {
         approved = true;
     }
 
-    function updateCollateralAssetPriceRatio(
-        uint256 _ratio
-    ) external onlyOwner {
+    function updateCollateralAssetPriceRatio(uint256 _ratio) external onlyOwner {
         info.collateralAssetPriceRatio = _ratio;
     }
 
     function depositFunds(uint256 amount) external payable {
-        require(
-            ILocker(info.locker).totalFundAmount() + amount <= info.loanLimit,
-            "can't deposit more than loan limit"
-        );
-        require(
-            block.timestamp >= info.depositStartDate &&
-                block.timestamp < info.collateralDepositStartDate,
-            "currently unavailable"
-        );
+        require(ILocker(info.locker).totalFundAmount() + amount <= info.loanLimit, "can't deposit more than loan limit");
+        require(block.timestamp >= info.depositStartDate && block.timestamp < info.collateralDepositStartDate, "currently unavailable");
 
         ILocker(info.locker).depositFunds{value: msg.value}(msg.sender, amount);
     }
 
     function depositCollateral() external payable onlyBorrower {
         require(
-            block.timestamp >= info.collateralDepositStartDate &&
-                block.timestamp < info.collateralDepositStartDate + 48 hours,
+            block.timestamp >= info.collateralDepositStartDate && block.timestamp < info.collateralDepositStartDate + 48 hours,
             "currently unavailable"
         );
 
-        uint256 requiredCollateral = (ILocker(info.locker).totalFundAmount() *
-            info.collateralRatio *
-            info.collateralAssetPriceRatio) / 100000000;
-        ILocker(info.locker).depositCollateral{value: msg.value}(
-            msg.sender,
-            requiredCollateral
-        );
+        uint256 requiredCollateral = (ILocker(info.locker).totalFundAmount() * info.collateralRatio * info.collateralAssetPriceRatio) /
+            100000000;
+        ILocker(info.locker).depositCollateral{value: msg.value}(msg.sender, requiredCollateral);
     }
 
     function takeLoan() external onlyBorrower {
         require(
             block.timestamp >= info.collateralDepositStartDate &&
-                block.timestamp <
-                info.collateralDepositStartDate +
-                    info.loanDurationInDays *
-                    86400,
+                block.timestamp < info.collateralDepositStartDate + info.loanDurationInDays * 86400,
             "currently unavailable"
         );
-        uint256 requiredCollateral = (ILocker(info.locker).totalFundAmount() *
-            info.collateralRatio) / 10000;
-        require(
-            ILocker(info.locker).collateralAmount() == requiredCollateral,
-            "collateral required to take loan"
-        );
+        uint256 requiredCollateral = (ILocker(info.locker).totalFundAmount() * info.collateralRatio) / 10000;
+        require(ILocker(info.locker).collateralAmount() == requiredCollateral, "collateral required to take loan");
         ILocker(info.locker).lendAsset(info.borrower);
     }
 
     function returnLoan() external payable onlyBorrower {
         require(
-            block.timestamp >=
-                info.collateralDepositStartDate +
-                    (info.loanDurationInDays) *
-                    86400 &&
-                block.timestamp <
-                info.collateralDepositStartDate +
-                    (info.loanDurationInDays + 2) *
-                    86400,
+            block.timestamp >= info.collateralDepositStartDate + (info.loanDurationInDays) * 86400 &&
+                block.timestamp < info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400,
             "currently unavailable"
         );
-        require(
-            ILocker(info.locker).returnedAmount() == 0 &&
-                ILocker(info.locker).totalInterest() == 0,
-            "already returned"
-        );
+        require(ILocker(info.locker).returnedAmount() == 0 && ILocker(info.locker).totalInterest() == 0, "already returned");
         uint256 lendAmount = ILocker(info.locker).lendAmount();
-        uint256 borrowerInterest = calculateInterest(
-            lendAmount,
-            info.borrowerAPY,
-            info.loanDurationInDays
-        );
-        uint256 lenderInterest = calculateInterest(
-            lendAmount,
-            info.lenderInterestAPY,
-            info.loanDurationInDays
-        );
+        uint256 borrowerInterest = calculateInterest(lendAmount, info.borrowerAPY, info.loanDurationInDays);
+        uint256 lenderInterest = calculateInterest(lendAmount, info.lenderInterestAPY, info.loanDurationInDays);
+
+        TransferLib._receive(ILocker(info.locker).fundAsset(), msg.sender, lendAmount + borrowerInterest);
 
         if (msg.value > 0) {
-            ILocker(info.locker).returnAsset{
-                value: lendAmount + lenderInterest
-            }(info.borrower, lendAmount, lenderInterest);
-            IAdmin(info.admin).collectFee{
-                value: borrowerInterest - lenderInterest
-            }(
-                info.borrower,
+            ILocker(info.locker).returnAsset{value: lendAmount + lenderInterest}(address(this), lendAmount, lenderInterest);
+
+            IAdmin(info.admin).collectFee{value: borrowerInterest - lenderInterest}(
+                address(this),
                 ILocker(info.locker).fundAsset(),
                 borrowerInterest - lenderInterest
             );
         } else {
-            ILocker(info.locker).returnAsset(
-                info.borrower,
-                lendAmount,
-                lenderInterest
-            );
-            IAdmin(info.admin).collectFee(
-                info.borrower,
-                ILocker(info.locker).fundAsset(),
-                borrowerInterest - lenderInterest
-            );
+            ILocker(info.locker).returnAsset(address(this), lendAmount, lenderInterest);
+            IAdmin(info.admin).collectFee(address(this), ILocker(info.locker).fundAsset(), borrowerInterest - lenderInterest);
         }
     }
 
     function withdrawCollateral() external onlyBorrower {
-        require(
-            block.timestamp >=
-                info.collateralDepositStartDate +
-                    (info.loanDurationInDays + 2) *
-                    86400,
-            "currently unavailable"
-        );
-        require(
-            ILocker(info.locker).returnedAmount() ==
-                ILocker(info.locker).lendAmount(),
-            "loan not returned yet"
-        );
+        require(block.timestamp >= info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400, "currently unavailable");
+        require(ILocker(info.locker).returnedAmount() == ILocker(info.locker).lendAmount(), "loan not returned yet");
         ILocker(info.locker).withdrawCollateral(msg.sender);
     }
 
     function claim() external onlyLender {
-        require(
-            block.timestamp >
-                info.collateralDepositStartDate +
-                    (info.loanDurationInDays + 2) *
-                    86400,
-            "currently unavailable"
-        );
-        require(
-            ILocker(info.locker).returnedAmount() ==
-                ILocker(info.locker).lendAmount(),
-            "loan default"
-        );
+        require(block.timestamp > info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400, "currently unavailable");
+        require(ILocker(info.locker).returnedAmount() == ILocker(info.locker).lendAmount(), "loan default");
 
         ILocker(info.locker).claim(msg.sender);
     }
 
     function claimDefault() external onlyLender {
-        require(
-            block.timestamp >
-                info.collateralDepositStartDate +
-                    (info.loanDurationInDays + 2) *
-                    86400,
-            "currently unavailable"
-        );
+        require(block.timestamp > info.collateralDepositStartDate + (info.loanDurationInDays + 2) * 86400, "currently unavailable");
         require(ILocker(info.locker).returnedAmount() == 0, "loan returned");
 
         ILocker(info.locker).claimDefault(msg.sender);
     }
 
-    function calculateInterest(
-        uint256 principal,
-        uint256 interestRate,
-        uint256 durationInDays
-    ) internal pure returns (uint256) {
+    function calculateInterest(uint256 principal, uint256 interestRate, uint256 durationInDays) internal pure returns (uint256) {
         uint256 actualInterestRate = (interestRate * durationInDays) / 365;
 
         return (principal * actualInterestRate) / 10000;

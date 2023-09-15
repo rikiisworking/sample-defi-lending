@@ -28,10 +28,7 @@ contract Admin {
 
     receive() external payable {}
 
-    function setFactories(
-        address _lockerFactory,
-        address _loanFactory
-    ) external onlyOwner {
+    function setFactories(address _lockerFactory, address _loanFactory) external onlyOwner {
         lockerFactory = ILockerFactory(_lockerFactory);
         loanFactory = ILoanFactory(_loanFactory);
     }
@@ -66,15 +63,8 @@ contract Admin {
     @param _fundAsset token address used for loan
     @param _collateralAsset token address used for collateral
     */
-    function createProposal(
-        uint256[4] memory conditions,
-        address _fundAsset,
-        address _collateralAsset
-    ) external {
-        address lockerAddress = lockerFactory.createLocker(
-            _fundAsset,
-            _collateralAsset
-        );
+    function createProposal(uint256[4] memory conditions, address _fundAsset, address _collateralAsset) external {
+        address lockerAddress = lockerFactory.createLocker(_fundAsset, _collateralAsset);
         LoanInfo memory loanInfo = LoanInfo(
             address(this),
             msg.sender,
@@ -92,12 +82,8 @@ contract Admin {
         ILocker(lockerAddress).setLoanAddress(loanAddress);
     }
 
-    function collectFee(
-        address _from,
-        address asset,
-        uint256 amount
-    ) external payable {
-        TransferLib._receive(IERC20Detail(asset), _from, amount);
+    function collectFee(address _from, address asset, uint256 amount) external payable {
+        TransferLib._receive(asset, _from, amount);
         collectedFees[asset] += amount;
     }
 
@@ -106,6 +92,6 @@ contract Admin {
         require(msg.sender == owner, "unauthorized");
         require(amount > 0, "no fee to withdraw");
         collectedFees[asset] = 0;
-        TransferLib._send(IERC20Detail(asset), owner, amount);
+        TransferLib._send(asset, owner, amount);
     }
 }

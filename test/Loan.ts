@@ -103,6 +103,14 @@ describe("Loan", function () {
     });
   });
 
+  it("updateCollateralAssetPriceRatio() should change collateralAssetPriceRatio variable", async () => {
+    const ratioBefore = (await loan.info()).collateralAssetPriceRatio;
+    await loan.updateCollateralAssetPriceRatio(20000);
+    const ratioAfter = (await loan.info()).collateralAssetPriceRatio;
+    expect(ratioBefore).to.equal(BigInt(10000));
+    expect(ratioAfter).to.equal(BigInt(20000));
+  })
+
   it("depositFunds() should deposit funds into locker", async () => {
     await time.increase(duration.days(3));
     await locker.deposits(user).then((amount: BigInt) => {

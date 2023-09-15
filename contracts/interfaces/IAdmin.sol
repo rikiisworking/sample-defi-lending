@@ -14,9 +14,5 @@ interface IAdmin {
 
     function setOwner(address _address) external;
 
-    function collectFee(
-        address _from,
-        address asset,
-        uint256 amount
-    ) external payable;
+    function collectFee(address _from, address asset, uint256 amount) external payable;
 }

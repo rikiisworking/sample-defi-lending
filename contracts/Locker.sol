@@ -42,27 +42,21 @@ contract Locker {
         loanAddress = _loanAddress;
     }
 
-    function depositFunds(
-        address _from,
-        uint256 amount
-    ) external payable onlyLoan {
-        TransferLib._receive(fundAsset, _from, amount);
+    function depositFunds(address _from, uint256 amount) external payable onlyLoan {
+        TransferLib._receive(address(fundAsset), _from, amount);
         totalFundAmount += amount;
         deposits[_from] += amount;
     }
 
-    function depositCollateral(
-        address _from,
-        uint256 amount
-    ) public payable onlyLoan {
-        TransferLib._receive(collateralAsset, _from, amount);
+    function depositCollateral(address _from, uint256 amount) public payable onlyLoan {
+        TransferLib._receive(address(collateralAsset), _from, amount);
         collateralAmount += amount;
     }
 
     function withdrawCollateral(address _to) external onlyLoan {
         uint256 amount = collateralAmount;
         collateralAmount = 0;
-        TransferLib._send(collateralAsset, _to, amount);
+        TransferLib._send(address(collateralAsset), _to, amount);
     }
 
     function claim(address _from) external onlyLoan {
@@ -72,32 +66,27 @@ contract Locker {
 
         deposits[_from] = 0;
         totalFundAmount -= claimAmount;
-        TransferLib._send(fundAsset, _from, claimAmount);
+        TransferLib._send(address(fundAsset), _from, claimAmount);
     }
 
     function claimDefault(address _from) external onlyLoan {
         uint256 userDeposit = deposits[_from];
-        uint256 liquidatedUserAmount = (collateralAmount * userDeposit) /
-            lendAmount;
+        uint256 liquidatedUserAmount = (collateralAmount * userDeposit) / lendAmount;
         deposits[_from] = 0;
-        TransferLib._send(collateralAsset, _from, liquidatedUserAmount);
+        TransferLib._send(address(collateralAsset), _from, liquidatedUserAmount);
     }
 
     function lendAsset(address _to) external onlyLoan {
         require(lendAmount == 0, "already borrowed");
         lendAmount = totalFundAmount;
         totalFundAmount -= lendAmount;
-        TransferLib._send(fundAsset, _to, lendAmount);
+        TransferLib._send(address(fundAsset), _to, lendAmount);
     }
 
-    function returnAsset(
-        address _from,
-        uint256 principal,
-        uint256 interest
-    ) external payable onlyLoan {
+    function returnAsset(address _from, uint256 principal, uint256 interest) external payable onlyLoan {
         require(lendAmount > 0, "not borrowed yet");
         uint256 amount = principal + interest;
-        TransferLib._receive(fundAsset, _from, amount);
+        TransferLib._receive(address(fundAsset), _from, amount);
         totalFundAmount += (principal + interest);
         returnedAmount = principal;
         totalInterest = interest;
