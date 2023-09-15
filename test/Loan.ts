@@ -109,7 +109,7 @@ describe("Loan", function () {
     const ratioAfter = (await loan.info()).collateralAssetPriceRatio;
     expect(ratioBefore).to.equal(BigInt(10000));
     expect(ratioAfter).to.equal(BigInt(20000));
-  })
+  });
 
   it("depositFunds() should deposit funds into locker", async () => {
     await time.increase(duration.days(3));
@@ -128,9 +128,7 @@ describe("Loan", function () {
     await time.increase(duration.days(3));
 
     await fundToken.connect(user).approve(locker, ethers.parseEther("1100"));
-    await expect(loan.connect(user).depositFunds(ethers.parseEther("1100"))).to.be.revertedWith(
-      "can't deposit more than loan limit"
-    );
+    await expect(loan.connect(user).depositFunds(ethers.parseEther("1100"))).to.be.revertedWith("can't deposit more than loan limit");
   });
 
   it("depositFunds() shouldn't work before depositStartDate or after collateralDepositStartDate", async () => {
@@ -224,7 +222,6 @@ describe("Loan", function () {
     const lenderInterest = (ethers.parseEther("100") * lenderInterestRate) / 10000n;
 
     const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
-    const adminApproveAmount = borrowerInterest - lenderInterest;
 
     await time.increase(duration.days(3));
     await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
@@ -237,8 +234,7 @@ describe("Loan", function () {
 
     await time.increase(duration.days(30));
 
-    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
+    await fundToken.connect(borrower).approve(loan, ethers.parseEther("100") + borrowerInterest);
 
     const adminFeeBefore = await admin.collectedFees(fundToken);
     const totalBalanceBefore = await locker.totalFundAmount();
@@ -284,12 +280,6 @@ describe("Loan", function () {
     const borrowerInterestRate = (2000n * 30n) / 365n;
     const borrowerInterest = (ethers.parseEther("100") * borrowerInterestRate) / 10000n;
 
-    const lenderInterestRate = (1000n * 30n) / 365n;
-    const lenderInterest = (ethers.parseEther("100") * lenderInterestRate) / 10000n;
-
-    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
-    const adminApproveAmount = borrowerInterest - lenderInterest;
-
     await time.increase(duration.days(3));
     await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
@@ -301,8 +291,7 @@ describe("Loan", function () {
 
     await time.increase(duration.days(30));
 
-    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
+    await fundToken.connect(borrower).approve(loan, ethers.parseEther("100") + borrowerInterest);
 
     await loan.connect(borrower).returnLoan();
 
@@ -349,9 +338,6 @@ describe("Loan", function () {
     const lenderInterestRate = (1000n * 30n) / 365n;
     const lenderInterest = (ethers.parseEther("100") * lenderInterestRate) / 10000n;
 
-    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
-    const adminApproveAmount = borrowerInterest - lenderInterest;
-
     await time.increase(duration.days(3));
     await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
@@ -363,8 +349,7 @@ describe("Loan", function () {
 
     await time.increase(duration.days(30));
 
-    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
+    await fundToken.connect(borrower).approve(loan, ethers.parseEther("100") + borrowerInterest);
 
     await loan.connect(borrower).returnLoan();
 
@@ -389,15 +374,6 @@ describe("Loan", function () {
   });
 
   it("claim() can't be called before loan returned", async () => {
-    const borrowerInterestRate = (2000n * 30n) / 365n;
-    const borrowerInterest = (ethers.parseEther("100") * borrowerInterestRate) / 10000n;
-
-    const lenderInterestRate = (1000n * 30n) / 365n;
-    const lenderInterest = (ethers.parseEther("100") * lenderInterestRate) / 10000n;
-
-    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
-    const adminApproveAmount = borrowerInterest - lenderInterest;
-
     await time.increase(duration.days(3));
     await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
@@ -409,8 +385,6 @@ describe("Loan", function () {
 
     await time.increase(duration.days(30));
 
-    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
 
     await time.increase(duration.days(2));
 
@@ -418,14 +392,6 @@ describe("Loan", function () {
   });
 
   it("claimDefault() should work properly", async () => {
-    const borrowerInterestRate = (2000n * 30n) / 365n;
-    const borrowerInterest = (ethers.parseEther("100") * borrowerInterestRate) / 10000n;
-
-    const lenderInterestRate = (1000n * 30n) / 365n;
-    const lenderInterest = (ethers.parseEther("100") * lenderInterestRate) / 10000n;
-
-    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
-    const adminApproveAmount = borrowerInterest - lenderInterest;
 
     await time.increase(duration.days(3));
     await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
@@ -437,9 +403,6 @@ describe("Loan", function () {
     await loan.connect(borrower).takeLoan();
 
     await time.increase(duration.days(30));
-
-    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
 
     await time.increase(duration.days(2));
 
@@ -455,14 +418,6 @@ describe("Loan", function () {
   });
 
   it("claimDefault() can be called only after return due date", async () => {
-    const borrowerInterestRate = (2000n * 30n) / 365n;
-    const borrowerInterest = (ethers.parseEther("100") * borrowerInterestRate) / 10000n;
-
-    const lenderInterestRate = (1000n * 30n) / 365n;
-    const lenderInterest = (ethers.parseEther("100") * lenderInterestRate) / 10000n;
-
-    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
-    const adminApproveAmount = borrowerInterest - lenderInterest;
 
     await time.increase(duration.days(3));
     await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
@@ -474,9 +429,6 @@ describe("Loan", function () {
     await loan.connect(borrower).takeLoan();
 
     await time.increase(duration.days(30));
-
-    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
 
     await time.increase(duration.days(1));
 
@@ -487,12 +439,6 @@ describe("Loan", function () {
     const borrowerInterestRate = (2000n * 30n) / 365n;
     const borrowerInterest = (ethers.parseEther("100") * borrowerInterestRate) / 10000n;
 
-    const lenderInterestRate = (1000n * 30n) / 365n;
-    const lenderInterest = (ethers.parseEther("100") * lenderInterestRate) / 10000n;
-
-    const lockerApproveAmount = ethers.parseEther("100") + lenderInterest;
-    const adminApproveAmount = borrowerInterest - lenderInterest;
-
     await time.increase(duration.days(3));
     await fundToken.connect(user).approve(locker, ethers.parseEther("100"));
     await loan.connect(user).depositFunds(ethers.parseEther("100"));
@@ -503,9 +449,7 @@ describe("Loan", function () {
     await loan.connect(borrower).takeLoan();
 
     await time.increase(duration.days(30));
-
-    await fundToken.connect(borrower).approve(locker, lockerApproveAmount);
-    await fundToken.connect(borrower).approve(admin, adminApproveAmount);
+    await fundToken.connect(borrower).approve(loan, ethers.parseEther("100") + borrowerInterest);
 
     await loan.connect(borrower).returnLoan();
 
