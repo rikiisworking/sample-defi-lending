@@ -4279,7 +4279,7 @@ solc@0.7.3:
     semver "^5.5.0"
     tmp "0.0.33"
 
-solidity-coverage@^0.8.0:
+solidity-coverage@^0.8.4:
   version "0.8.4"
   resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.8.4.tgz#c57a21979f5e86859c5198de9fbae2d3bc6324a5"
   integrity sha512-xeHOfBOjdMF6hWTbt42iH4x+7j1Atmrf5OldDPMxI+i/COdExUxszOswD9qqvcBTaLGiOrrpnh9UZjSpt4rBsg==

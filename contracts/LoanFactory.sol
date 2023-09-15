@@ -20,9 +20,7 @@ contract LoanFactory {
         loanImplementationAddress = _address;
     }
 
-    function createLoan(
-        LoanInfo memory _conditions
-    ) external returns (address) {
+    function createLoan(LoanInfo memory _conditions) external returns (address) {
         require(msg.sender == admin, "unauthorized");
 
         Loan loan = Loan(Clones.clone(loanImplementationAddress));

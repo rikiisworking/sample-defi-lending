@@ -34,9 +34,5 @@ interface ILocker {
 
     function lendAsset(address _to) external;
 
-    function returnAsset(
-        address _from,
-        uint256 principal,
-        uint256 interest
-    ) external payable;
+    function returnAsset(address _from, uint256 principal, uint256 interest) external payable;
 }

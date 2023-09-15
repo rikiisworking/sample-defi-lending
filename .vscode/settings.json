@@ -1,34 +1,37 @@
 {
-    "editor.rulers": [80, 120],
+  "editor.rulers": [80, 120],
+  "editor.insertSpaces": true,
+  "editor.tabSize": 4,
+  "editor.renderWhitespace": "all",
+  "solidity.linter": "solhint",
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  "prettier.printWidth": 140,
+  "[javascript]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file",
+    "editor.formatOnPaste": false,
+    "editor.formatOnType": false,
+    "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+  },
+  "[typescript]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file",
+    "editor.formatOnPaste": false,
+    "editor.formatOnType": false,
+    "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+  },
+  "[solidity]": {
     "editor.insertSpaces": true,
     "editor.tabSize": 4,
-    "editor.renderWhitespace": "all",
-    "[javascript]": {
-      "editor.insertSpaces": true,
-      "editor.tabSize": 2,
-      "editor.formatOnSave": true,
-      "editor.formatOnSaveMode": "file",
-      "editor.formatOnPaste": false,
-      "editor.formatOnType": false,
-      "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
-    },
-    "[typescript]": {
-      "editor.insertSpaces": true,
-      "editor.tabSize": 2,
-      "editor.formatOnSave": true,
-      "editor.formatOnSaveMode": "file",
-      "editor.formatOnPaste": false,
-      "editor.formatOnType": false,
-      "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
-    },
-    "[solidity]": {
-      "editor.insertSpaces": true,
-      "editor.tabSize": 4,
-      "editor.formatOnSave": true,
-      "editor.defaultFormatter": "JuanBlanco.solidity"
-    },
-    "solidity.compileUsingRemoteVersion": "v0.8.19+commit.7dd6d404",
-    "solidity.linter": "solhint",
-    "typescript.tsdk": "node_modules/typescript/lib"
-  }
-  
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "JuanBlanco.solidity"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "prettier.requireConfig": true
+}

@@ -51,6 +51,36 @@ describe("Admin", function () {
     await lockerFactory.waitForDeployment();
   });
 
+  it("updateLoanImplementation() should update loan implementation address", async () => {
+    await admin.setFactories(lockerFactory, loanFactory);
+    const addrBefore = await loanFactory.loanImplementationAddress();
+    const loanFactory_ = await ethers.getContractFactory("Loan");
+    loan = await loanFactory_.deploy();
+    await loan.waitForDeployment();
+    await admin.updateLoanImplementation(loan);
+    const addrAfter = await loanFactory.loanImplementationAddress();
+    expect(addrBefore).not.to.be.equal(addrAfter);
+  })
+
+  it("updateLoanImplementation() should be called only by owner", async () => {
+    await expect(admin.connect(user1).updateLoanImplementation(ethers.ZeroAddress)).to.be.revertedWith("unauthorized");
+  })
+
+  it("updateLockerImplementation() should update locker implementation address", async () => {
+    await admin.setFactories(lockerFactory, loanFactory);
+    const addrBefore = await lockerFactory.lockerImplementationAddress();
+    const lockerFactory_ = await ethers.getContractFactory("Locker");
+    locker = await lockerFactory_.deploy();
+    await locker.waitForDeployment();
+    await admin.updateLockerImplementation(locker);
+    const addrAfter = await lockerFactory.lockerImplementationAddress();
+    expect(addrBefore).not.to.be.equal(addrAfter);
+  })
+
+  it("updateLockerImplementation() should be called only by owner", async () => {
+    await expect(admin.connect(user1).updateLockerImplementation(ethers.ZeroAddress)).to.be.revertedWith("unauthorized");
+  })
+
   it("addBorrower() can be called only by owner", async () => {
     await expect(admin.connect(user1).addBorrower(user2.address)).to.be.revertedWith("unauthorized");
   });
@@ -77,6 +107,10 @@ describe("Admin", function () {
     await expect(admin.connect(user1).setOwner(user1.address)).to.be.revertedWith("unauthorized");
   });
 
+  it("setOwner() should revert on addressZero param", async () => {
+    await expect(admin.setOwner(ethers.ZeroAddress)).to.be.revertedWith("invalid address");
+  })
+
   it("setOwner() should change owner", async () => {
     await admin.owner().then((ownerAddress: string) => {
       expect(ownerAddress).to.equal(owner.address);
@@ -102,6 +136,10 @@ describe("Admin", function () {
       expect(address).to.equal(await loanFactory.getAddress());
     });
   });
+
+  it("setFactories() should be called only by owner", async () => {
+    await expect(admin.connect(user1).setFactories(lockerFactory, loanFactory)).to.be.revertedWith("unauthorized");
+  })
 
   it("createProposal() should generate locker and loan", async () => {
     await lockerFactory.lockerSize().then((size: BigInt) => {
