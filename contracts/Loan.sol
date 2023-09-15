@@ -120,7 +120,6 @@ contract Loan {
         TransferLib._receive(ILocker(info.locker).fundAsset(), msg.sender, lendAmount + borrowerInterest);
 
         if (fundAsset == address(0)) {
-            require(msg.value == lendAmount + borrowerInterest, "not enough native token");
             ILocker(info.locker).returnAsset{value: lendAmount + lenderInterest}(
                 address(this),
                 lendAmount,
