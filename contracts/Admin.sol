@@ -4,11 +4,12 @@ pragma solidity ^0.8.19;
 import {ILockerFactory} from "./interfaces/ILockerFactory.sol";
 import {ILoanFactory, LoanInfo} from "./interfaces/ILoanFactory.sol";
 import {ILocker} from "./interfaces/ILocker.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Detail} from "./interfaces/IERC20Detail.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {TransferLib} from "./libraries/TransferLib.sol";
 
 contract Admin {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20Detail;
 
     address public owner;
     ILockerFactory public lockerFactory;
@@ -96,12 +97,7 @@ contract Admin {
         address asset,
         uint256 amount
     ) external payable {
-        if (address(asset) != address(0)) {
-            require(msg.value == 0, "native token not supported");
-            IERC20(asset).safeTransferFrom(_from, address(this), amount);
-        } else {
-            require(msg.value == amount, "invalid amount recieved");
-        }
+        TransferLib._receive(IERC20Detail(asset), _from, amount);
         collectedFees[asset] += amount;
     }
 
@@ -110,11 +106,6 @@ contract Admin {
         require(msg.sender == owner, "unauthorized");
         require(amount > 0, "no fee to withdraw");
         collectedFees[asset] = 0;
-        if (address(asset) != address(0)) {
-            IERC20(asset).safeTransfer(owner, amount);
-        } else {
-            (bool sent, ) = owner.call{value: amount}("");
-            require(sent, "failed to send native token");
-        }
+        TransferLib._send(IERC20Detail(asset), owner, amount);
     }
 }
