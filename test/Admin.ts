@@ -148,6 +148,7 @@ describe("Admin", function () {
     await loanFactory.loanSize().then((size: BigInt) => {
       expect(size).to.equal(BigInt(0));
     });
+    await admin.addBorrower(owner);
     await admin.setFactories(lockerFactory, loanFactory);
     await admin.createProposal([1000, (await time.latest()) + 1000, 30, 1000], ethers.ZeroAddress, ethers.ZeroAddress);
     await lockerFactory.lockerSize().then((size: BigInt) => {

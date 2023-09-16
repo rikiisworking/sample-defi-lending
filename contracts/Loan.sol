@@ -66,6 +66,7 @@ contract Loan {
     }
 
     function depositFunds(uint256 amount) external payable {
+        address fundAsset = ILocker(info.locker).fundAsset();
         require(
             ILocker(info.locker).totalFundAmount() + amount <= info.loanLimit,
             "can't deposit more than loan limit"
@@ -74,11 +75,16 @@ contract Loan {
             block.timestamp >= info.depositStartDate && block.timestamp < info.collateralDepositStartDate,
             "currently unavailable"
         );
+        TransferLib._receive(fundAsset, msg.sender, amount);
+        if (fundAsset != address(0)) {
+            IERC20Detail(fundAsset).approve(info.locker, amount);
+        }
 
         ILocker(info.locker).depositFunds{value: msg.value}(msg.sender, amount);
     }
 
     function depositCollateral() external payable onlyBorrower {
+        address collateralAsset = ILocker(info.locker).collateralAsset();
         require(
             block.timestamp >= info.collateralDepositStartDate &&
                 block.timestamp < info.collateralDepositStartDate + 48 hours,
@@ -88,7 +94,13 @@ contract Loan {
         uint256 requiredCollateral = (ILocker(info.locker).totalFundAmount() *
             info.collateralRatio *
             info.collateralAssetPriceRatio) / 100000000;
-        ILocker(info.locker).depositCollateral{value: msg.value}(msg.sender, requiredCollateral);
+
+        TransferLib._receive(collateralAsset, msg.sender, requiredCollateral);
+        if (collateralAsset != address(0)) {
+            IERC20Detail(collateralAsset).approve(info.locker, requiredCollateral);
+        }
+
+        ILocker(info.locker).depositCollateral{value: msg.value}(requiredCollateral);
     }
 
     function takeLoan() external onlyBorrower {

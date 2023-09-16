@@ -17,6 +17,7 @@ npx hardhat run scripts/deploy.ts
 ## outline
 
 there are 3 roles for this service,
+
 - borrower: borrows funds and pays back with borrowerInterest
 - lender: lends funds and gets lenderInterest
 - admin: verify loan condition and approves loan, monetize from interest difference
@@ -44,7 +45,7 @@ tbu
 - [x] update test codes for native tokens
 - [ ] ~~diamondcut pattern adoption~~
 - [x] clone factory pattern adpotion
-- [ ] scenario test codes
+- [x] scenario test codes
 - [ ] update readme with detailed description
 - [x] add deploy scripts
 
@@ -56,7 +57,7 @@ tbu
   <summary>gas usage without clone</summary>
 
 following result comes from running testcodes with REPORT_GAS=true option
-  
+
 ```bash
 ·--------------------------------|----------------------------|-------------|-----------------------------·
 |      Solc version: 0.8.19      ·  Optimizer enabled: false  ·  Runs: 200  ·  Block limit: 30000000 gas  │
@@ -94,13 +95,14 @@ following result comes from running testcodes with REPORT_GAS=true option
 |  MockToken                     ·           -  ·          -  ·    1238799  ·        4.1 %  ·          -  │
 ·--------------------------------|--------------|-------------|-------------|---------------|-------------·
 ```
+
 </details>
 
 <details>
   <summary>gas usage with clone</summary>
 
 following result comes from running testcodes with REPORT_GAS=true option
-  
+
 ```bash
 ·--------------------------------|----------------------------|-------------|-----------------------------·
 |      Solc version: 0.8.19      ·  Optimizer enabled: false  ·  Runs: 200  ·  Block limit: 30000000 gas  │
@@ -142,6 +144,7 @@ following result comes from running testcodes with REPORT_GAS=true option
 |  MockToken                     ·           -  ·          -  ·    1238799  ·        4.1 %  ·          -  │
 ·--------------------------------|--------------|-------------|-------------|---------------|-------------·
 ```
+
 </details>
 
 ## test deployment from local hardhat node
@@ -152,6 +155,7 @@ yarn hardhat run scripts/deploy.ts
 ```
 
 you'll get following output after deployment
+
 ```bash
 admin deployed: 0x5FbDB2315678afecb367f032d93F642f64180aa3
 loan deployed: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
@@ -160,4 +164,3 @@ loanFactory deployed: 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
 lockerFactory deployed: 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9
 ✨  Done in 1.21s.
 ```
-
