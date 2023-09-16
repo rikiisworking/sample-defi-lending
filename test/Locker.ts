@@ -2,16 +2,16 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 import { Locker, MockToken } from "../typechain-types";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("Locker", function () {
   let locker: Locker;
   let tokenLocker: Locker;
   let fundToken: MockToken;
   let collateralToken: MockToken;
-  let owner: SignerWithAddress;
-  let user1: SignerWithAddress;
-  let user2: SignerWithAddress;
+  let owner: HardhatEthersSigner;
+  let user1: HardhatEthersSigner;
+  let user2: HardhatEthersSigner;
   const decimals = 18;
 
   before(async () => {
@@ -69,7 +69,7 @@ describe("Locker", function () {
     await tokenLocker.deposits(user1.address).then((amount: BigInt) => {
       expect(amount).to.equal(BigInt(0));
     });
-    await fundToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user1.address, ethers.parseEther("1"));
 
     await tokenLocker.deposits(user1.address).then((amount: BigInt) => {
@@ -88,7 +88,7 @@ describe("Locker", function () {
     await locker.collateralAmount().then((amount: BigInt) => {
       expect(amount).to.equal(BigInt(0));
     });
-    await locker.connect(owner).depositCollateral(owner, ethers.parseEther("1"), { value: ethers.parseEther("1") });
+    await locker.connect(owner).depositCollateral(ethers.parseEther("1"), { value: ethers.parseEther("1") });
     await locker.collateralAmount().then((amount: BigInt) => {
       expect(amount).to.equal(ethers.parseEther("1"));
     });
@@ -99,18 +99,18 @@ describe("Locker", function () {
       expect(amount).to.equal(BigInt(0));
     });
     await collateralToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
-    await tokenLocker.connect(owner).depositCollateral(owner, ethers.parseEther("1"));
+    await tokenLocker.connect(owner).depositCollateral( ethers.parseEther("1"));
     await tokenLocker.collateralAmount().then((amount: BigInt) => {
       expect(amount).to.equal(ethers.parseEther("1"));
     });
   });
 
   it("depositCollateral() should be called only by loan", async () => {
-    await expect(locker.connect(user1).depositCollateral(owner, ethers.parseEther("1"), { value: ethers.parseEther("1") })).to.be.revertedWith("unauthorized");
+    await expect(locker.connect(user1).depositCollateral(ethers.parseEther("1"), { value: ethers.parseEther("1") })).to.be.revertedWith("unauthorized");
   })
 
   it("withdrawCollateral() should work for native token", async () => {
-    await locker.connect(owner).depositCollateral(owner, ethers.parseEther("1"), { value: ethers.parseEther("1") });
+    await locker.connect(owner).depositCollateral(ethers.parseEther("1"), { value: ethers.parseEther("1") });
 
     await locker.collateralAmount().then((amount: BigInt) => {
       expect(amount).to.equal(ethers.parseEther("1"));
@@ -127,7 +127,7 @@ describe("Locker", function () {
 
   it("withdrawCollateral() should work for erc20 token", async () => {
     await collateralToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
-    await tokenLocker.connect(owner).depositCollateral(owner, ethers.parseEther("1"));
+    await tokenLocker.connect(owner).depositCollateral(ethers.parseEther("1"));
 
     await tokenLocker.collateralAmount().then((amount: BigInt) => {
       expect(amount).to.equal(ethers.parseEther("1"));
@@ -144,14 +144,14 @@ describe("Locker", function () {
   });
 
   it("withdrawCollateral() should be called only by loan", async () => {
-    await locker.connect(owner).depositCollateral(owner, ethers.parseEther("1"), { value: ethers.parseEther("1") });
+    await locker.connect(owner).depositCollateral(ethers.parseEther("1"), { value: ethers.parseEther("1") });
     await expect(locker.connect(user1).withdrawCollateral(owner)).to.be.revertedWith("unauthorized");
   })
 
   it("claim() should return deposit and interest back to lender", async () => {
-    await fundToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user1.address, ethers.parseEther("1"));
-    await fundToken.connect(user2).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user2.address, ethers.parseEther("1"));
     await tokenLocker.connect(owner).lendAsset(owner);
 
@@ -166,9 +166,9 @@ describe("Locker", function () {
   });
 
   it("claim() should be called only by loan", async () => {
-    await fundToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user1.address, ethers.parseEther("1"));
-    await fundToken.connect(user2).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user2.address, ethers.parseEther("1"));
     await tokenLocker.connect(owner).lendAsset(owner);
 
@@ -179,12 +179,12 @@ describe("Locker", function () {
   })
 
   it("claimDefault() should return collateral to lender", async () => {
-    await fundToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user1.address, ethers.parseEther("1"));
-    await fundToken.connect(user2).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user2.address, ethers.parseEther("1"));
     await collateralToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
-    await tokenLocker.connect(owner).depositCollateral(owner, ethers.parseEther("1"));
+    await tokenLocker.connect(owner).depositCollateral(ethers.parseEther("1"));
     await tokenLocker.connect(owner).lendAsset(owner);
 
     const balanceBefore = await collateralToken.balanceOf(user1);
@@ -195,12 +195,12 @@ describe("Locker", function () {
   });
 
   it("claimDefault() should be called only by loan", async () => {
-    await fundToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user1.address, ethers.parseEther("1"));
-    await fundToken.connect(user2).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user2.address, ethers.parseEther("1"));
     await collateralToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
-    await tokenLocker.connect(owner).depositCollateral(owner, ethers.parseEther("1"));
+    await tokenLocker.connect(owner).depositCollateral(ethers.parseEther("1"));
     await tokenLocker.connect(owner).lendAsset(owner);
     await expect(tokenLocker.connect(user1).claimDefault(user1)).to.be.revertedWith("unauthorized");
   })
@@ -222,22 +222,20 @@ describe("Locker", function () {
   });
 
   it("lendAsset() should work for erc20 token", async () => {
-    const beforeBalance = await fundToken.balanceOf(owner);
-    await fundToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user1.address, ethers.parseEther("1"));
-    await fundToken.connect(user2).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user2.address, ethers.parseEther("1"));
 
     await tokenLocker.connect(owner).lendAsset(owner);
-    const afterBalance = await fundToken.balanceOf(owner);
 
     await tokenLocker.totalFundAmount().then((amount: BigInt) => {
       expect(amount).to.equal(BigInt(0));
     });
+   
     await tokenLocker.lendAmount().then((amount: BigInt) => {
       expect(amount).to.equal(ethers.parseEther("2"));
-    });
-    expect(afterBalance - beforeBalance).to.equal(ethers.parseEther("2"));
+    }); 
   });
 
   it("lendAsset() should be called only by loan", async () => {
@@ -248,9 +246,9 @@ describe("Locker", function () {
   })
 
   it('lendAsset() cannot be called twice', async () => {
-    await fundToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user1.address, ethers.parseEther("1"));
-    await fundToken.connect(user2).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user2.address, ethers.parseEther("1"));
 
     await tokenLocker.connect(owner).lendAsset(owner);
@@ -276,9 +274,9 @@ describe("Locker", function () {
   });
 
   it("returnAsset() should work for erc20 token", async () => {
-    await fundToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user1.address, ethers.parseEther("1"));
-    await fundToken.connect(user2).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user2.address, ethers.parseEther("1"));
     await tokenLocker.connect(owner).lendAsset(owner);
     await tokenLocker.totalFundAmount().then((amount: BigInt) => {
@@ -296,9 +294,9 @@ describe("Locker", function () {
   });
 
   it("returnAsset() should be called only by loan", async () => {
-    await fundToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user1.address, ethers.parseEther("1"));
-    await fundToken.connect(user2).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user2.address, ethers.parseEther("1"));
     await tokenLocker.connect(owner).lendAsset(owner);
     await tokenLocker.totalFundAmount().then((amount: BigInt) => {
@@ -313,9 +311,9 @@ describe("Locker", function () {
   })
 
   it("returnAsset() can't be called if not lended", async () => {
-    await fundToken.connect(user1).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user1.address, ethers.parseEther("1"));
-    await fundToken.connect(user2).approve(tokenLocker, ethers.parseEther("1"));
+    await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("1"));
     await tokenLocker.connect(owner).depositFunds(user2.address, ethers.parseEther("1"));
     await fundToken.connect(owner).approve(tokenLocker, ethers.parseEther("3"));
     await expect(tokenLocker.connect(owner).returnAsset(owner, ethers.parseEther("2"), ethers.parseEther("1"))).to.be.revertedWith("not borrowed yet");

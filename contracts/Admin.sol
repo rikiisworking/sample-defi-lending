@@ -64,6 +64,7 @@ contract Admin {
     @param _collateralAsset token address used for collateral
     */
     function createProposal(uint256[4] memory conditions, address _fundAsset, address _collateralAsset) external {
+        require(borrowers[msg.sender], "only borrower can create proposal");
         address lockerAddress = lockerFactory.createLocker(_fundAsset, _collateralAsset);
         LoanInfo memory loanInfo = LoanInfo(
             address(this),
