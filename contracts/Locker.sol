@@ -48,7 +48,7 @@ contract Locker {
         deposits[_from] += amount;
     }
 
-    function depositCollateral(uint256 amount) public payable onlyLoan {
+    function depositCollateral(uint256 amount) external payable onlyLoan {
         TransferLib._receive(address(collateralAsset), msg.sender, amount);
         collateralAmount += amount;
     }
