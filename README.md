@@ -12,9 +12,15 @@ npx hardhat node
 npx hardhat run scripts/deploy.ts
 ```
 
-# Project description
+# Project Description
 
-## outline
+## Outline
+
+Simple project for smart contract working as lending platform.
+
+## Details
+
+### players
 
 there are 3 roles for this service,
 
@@ -22,17 +28,28 @@ there are 3 roles for this service,
 - lender: lends funds and gets lenderInterest
 - admin: verify loan condition and approves loan, monetize from interest difference
 
-1. borrower proposes loan with conditions
-2. admin fixes condition and approves loan
-3. lenders deposits into locker for loan
-4. once funding is completed, borrower deposits collateral
-5. after depositing collateral, borrower can take loan from locker
-6. borrower returns principal with interest after loan duration and withdraws collateral
-7. lenders claim their deposits and interest
+```mermaid
+  sequenceDiagram
 
-## details
+  participant Owner
+  participant Contract
+  participant Borrower
+  participant Lender
 
-tbu
+  Borrower->>Contract: 1. propose loan
+  Owner->>Contract: 2. approve loan
+  Lender->>Contract: 3. fund loan
+  Borrower->>Contract: 4. deposit collateral
+  Contract->>Borrower: 5. take loan
+  Borrower->>Contract: 6. return fund with interest
+  Contract->>Borrower: 7. withdraw collateral
+  Contract->>Lender: 8. claim fund with interest
+  Contract->>Owner: 9. claim fee
+```
+
+### contracts
+
+<img src="./classDiagram.svg">
 
 ## Todos
 
@@ -46,10 +63,10 @@ tbu
 - [ ] ~~diamondcut pattern adoption~~
 - [x] clone factory pattern adpotion
 - [x] scenario test codes
-- [ ] update readme with detailed description
+- [x] update readme with detailed description
 - [x] add deploy scripts
 
-## clone factory pattern's gas savings
+## Clone Factory Pattern's Gas Efficiency
 
 - check gas consumption of `createProposal` function
 - `3997338` -> `479817`: saved `3517521` gas
