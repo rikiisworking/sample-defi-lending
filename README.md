@@ -51,21 +51,6 @@ there are 3 roles for this service,
 
 <img src="./classDiagram.svg">
 
-## Todos
-
-- [x] Set different assets for collateral and funding
-- [x] Default & Liquidate functionality
-- [x] test codes for Default & Liquidate functionality
-- [x] Separate basic transfer functionality working for both erc20 and native token
-- [x] limit function call directly from locker
-- [x] complete function call auth check
-- [x] update test codes for native tokens
-- [ ] ~~diamondcut pattern adoption~~
-- [x] clone factory pattern adpotion
-- [x] scenario test codes
-- [x] update readme with detailed description
-- [x] add deploy scripts
-
 ## Clone Factory Pattern's Gas Efficiency
 
 - check gas consumption of `createProposal` function
@@ -181,3 +166,23 @@ loanFactory deployed: 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
 lockerFactory deployed: 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9
 ✨  Done in 1.21s.
 ```
+
+## Todos(Archived)
+<details>
+  <summary> archived </summary>
+  
+  - [x] Set different assets for collateral and funding
+  - [x] Default & Liquidate functionality
+  - [x] test codes for Default & Liquidate functionality
+  - [x] Separate basic transfer functionality working for both erc20 and native token
+  - [x] limit function call directly from locker
+  - [x] complete function call auth check
+  - [x] update test codes for native tokens
+  - [ ] ~~diamondcut pattern adoption~~
+  - [x] clone factory pattern adpotion
+  - [x] scenario test codes
+  - [x] update readme with detailed description
+  - [x] add deploy scripts
+
+</details>
+
